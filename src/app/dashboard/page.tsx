@@ -35,7 +35,18 @@ import TabIcon from '@mui/icons-material/Tab';
 import EventIcon from '@mui/icons-material/Event';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { BarChart, LineChart } from '@mui/x-charts';
+import dynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
+
+// Lazy-load the map (SSR-unfriendly SVG library)
+const WorldMap = dynamic(() => import('@/components/WorldMap'), {
+  ssr: false,
+  loading: () => (
+    <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <CircularProgress sx={{ color: palette.accent }} />
+    </Box>
+  ),
+});
 
 interface Stats {
   meta: {
@@ -513,6 +524,29 @@ export default function Dashboard() {
                     height={230}
                   />
                 </Box>
+              </Card>
+            )}
+
+            {/* World Map */}
+            {stats.eventsByCountry.length > 0 && (
+              <Card
+                sx={{
+                  bgcolor: palette.bgSurface,
+                  border: `1px solid ${palette.border}`,
+                  mb: 4,
+                  p: 3,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <PublicIcon sx={{ color: palette.blue }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Usage by Country
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: palette.textMuted, ml: 1 }}>
+                    {stats.eventsByCountry.length} countries
+                  </Typography>
+                </Box>
+                <WorldMap data={stats.eventsByCountry} />
               </Card>
             )}
 
