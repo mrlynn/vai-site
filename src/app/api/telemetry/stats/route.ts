@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
       eventsByContext,
       eventsByTab,
       eventsByCommand,
+      eventsByCity,
+      cityLocations,
       dailyActivity,
       hourlyDistribution,
       recentEvents,
@@ -109,6 +111,44 @@ export async function GET(request: NextRequest) {
           { $group: { _id: '$command', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
           { $limit: 30 },
+        ])
+        .toArray(),
+
+      // Events by city
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, city: { $exists: true, $ne: null } } },
+          {
+            $group: {
+              _id: { city: '$city', region: '$region', country: '$country' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+          { $limit: 50 },
+        ])
+        .toArray(),
+
+      // City locations (for map markers) — get one lat/lng per city
+      collection
+        .aggregate([
+          {
+            $match: {
+              ...rangeFilter,
+              city: { $exists: true, $ne: null },
+              location: { $exists: true },
+            },
+          },
+          {
+            $group: {
+              _id: { city: '$city', country: '$country' },
+              count: { $sum: 1 },
+              lat: { $first: { $arrayElemAt: ['$location.coordinates', 1] } },
+              lng: { $first: { $arrayElemAt: ['$location.coordinates', 0] } },
+            },
+          },
+          { $sort: { count: -1 } },
+          { $limit: 100 },
         ])
         .toArray(),
 

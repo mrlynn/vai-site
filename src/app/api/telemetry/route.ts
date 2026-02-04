@@ -76,8 +76,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get country from Vercel headers (privacy-safe, no full IP stored)
+    // Get geo from Vercel headers (privacy-safe, no full IP stored)
     const country = request.headers.get('x-vercel-ip-country') || undefined;
+    const region = request.headers.get('x-vercel-ip-country-region') || undefined;
+    const city = request.headers.get('x-vercel-ip-city')
+      ? decodeURIComponent(request.headers.get('x-vercel-ip-city')!)
+      : undefined;
+    const latitude = request.headers.get('x-vercel-ip-latitude')
+      ? parseFloat(request.headers.get('x-vercel-ip-latitude')!)
+      : undefined;
+    const longitude = request.headers.get('x-vercel-ip-longitude')
+      ? parseFloat(request.headers.get('x-vercel-ip-longitude')!)
+      : undefined;
 
     // Build the telemetry document
     const doc = {
@@ -92,6 +102,11 @@ export async function POST(request: NextRequest) {
       timestamp: body.timestamp || new Date().toISOString(),
       receivedAt: new Date(),
       country,
+      region,
+      city,
+      ...(latitude !== undefined && longitude !== undefined
+        ? { location: { type: 'Point', coordinates: [longitude, latitude] } }
+        : {}),
     };
 
     const db = await getDb();
