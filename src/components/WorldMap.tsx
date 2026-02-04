@@ -10,6 +10,7 @@ import {
 } from 'react-simple-maps';
 import { Box, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { palette } from '@/theme/theme';
+import { numericToAlpha2 } from '@/lib/country-codes';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
@@ -135,7 +136,13 @@ function WorldMap({ countryData, cityData = [] }: WorldMapProps) {
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                const isoA2 = geo.properties.ISO_A2 || geo.properties.iso_a2 || '';
+                // world-atlas uses numeric IDs — convert to alpha-2
+                const numericId = String(geo.id).padStart(3, '0');
+                const isoA2 =
+                  geo.properties.ISO_A2 ||
+                  geo.properties.iso_a2 ||
+                  numericToAlpha2[numericId] ||
+                  '';
                 const name = geo.properties.name || geo.properties.NAME || '';
                 const count = countMap.get(isoA2.toUpperCase()) || 0;
                 const showCountryFill = view === 'countries';
