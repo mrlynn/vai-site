@@ -5,60 +5,78 @@ import {
   ComposableMap,
   Geographies,
   Geography,
+  Marker,
   ZoomableGroup,
 } from 'react-simple-maps';
-import { Box, Typography, Tooltip as MuiTooltip } from '@mui/material';
+import { Box, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { palette } from '@/theme/theme';
 
-// Natural Earth TopoJSON (hosted by react-simple-maps)
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
-// ISO 3166-1 alpha-2 → alpha-3 mapping (Vercel sends alpha-2, topojson uses alpha-3 numeric)
-// We'll match on ISO_A2 property instead
-
 interface CountryData {
-  country: string; // ISO alpha-2
+  country: string;
   count: number;
 }
 
-interface WorldMapProps {
-  data: CountryData[];
+interface CityLocation {
+  city: string;
+  country: string;
+  count: number;
+  lat: number;
+  lng: number;
 }
 
-function WorldMap({ data }: WorldMapProps) {
+interface WorldMapProps {
+  countryData: CountryData[];
+  cityData?: CityLocation[];
+}
+
+function WorldMap({ countryData, cityData = [] }: WorldMapProps) {
   const [tooltipContent, setTooltipContent] = useState('');
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [view, setView] = useState<'countries' | 'cities'>(
+    cityData.length > 0 ? 'cities' : 'countries'
+  );
 
-  // Build a lookup map from alpha-2 code → count
   const countMap = useMemo(() => {
     const map = new Map<string, number>();
-    data.forEach((d) => {
+    countryData.forEach((d) => {
       if (d.country) map.set(d.country.toUpperCase(), d.count);
     });
     return map;
-  }, [data]);
+  }, [countryData]);
 
-  const maxCount = useMemo(() => {
-    if (data.length === 0) return 1;
-    return Math.max(...data.map((d) => d.count), 1);
-  }, [data]);
+  const maxCountryCount = useMemo(() => {
+    if (countryData.length === 0) return 1;
+    return Math.max(...countryData.map((d) => d.count), 1);
+  }, [countryData]);
 
-  // Color scale: transparent → accent green
-  function getColor(count: number): string {
+  const maxCityCount = useMemo(() => {
+    if (cityData.length === 0) return 1;
+    return Math.max(...cityData.map((d) => d.count), 1);
+  }, [cityData]);
+
+  function getCountryColor(count: number): string {
     if (count === 0) return palette.bgCard;
-    // Log scale for better distribution
-    const intensity = Math.log(count + 1) / Math.log(maxCount + 1);
+    const intensity = Math.log(count + 1) / Math.log(maxCountryCount + 1);
     const minOpacity = 0.2;
     const opacity = minOpacity + intensity * (1 - minOpacity);
-    // Interpolate from dim green to bright green
     const r = Math.round(0 * opacity);
     const g = Math.round(237 * opacity + 30 * (1 - opacity));
     const b = Math.round(100 * opacity + 43 * (1 - opacity));
     return `rgb(${r}, ${g}, ${b})`;
   }
 
+  function getCityRadius(count: number): number {
+    const minR = 3;
+    const maxR = 18;
+    const scale = Math.sqrt(count) / Math.sqrt(maxCityCount);
+    return minR + scale * (maxR - minR);
+  }
+
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
+      {/* Tooltip */}
       {tooltipContent && (
         <Box
           sx={{
@@ -80,24 +98,47 @@ function WorldMap({ data }: WorldMapProps) {
           </Typography>
         </Box>
       )}
+
+      {/* View Toggle */}
+      {cityData.length > 0 && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <ToggleButtonGroup
+            value={view}
+            exclusive
+            onChange={(_, v) => v && setView(v)}
+            size="small"
+            sx={{
+              '& .MuiToggleButton-root': {
+                color: palette.textMuted,
+                borderColor: palette.border,
+                fontSize: '0.75rem',
+                py: 0.5,
+                px: 1.5,
+                '&.Mui-selected': {
+                  color: palette.accent,
+                  bgcolor: 'rgba(0, 237, 100, 0.1)',
+                },
+              },
+            }}
+          >
+            <ToggleButton value="countries">Countries</ToggleButton>
+            <ToggleButton value="cities">Cities</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
+
       <ComposableMap
-        projectionConfig={{
-          rotate: [-10, 0, 0],
-          scale: 147,
-        }}
+        projectionConfig={{ rotate: [-10, 0, 0], scale: 147 }}
         style={{ width: '100%', height: 'auto' }}
       >
         <ZoomableGroup>
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                // Try multiple property names for country code matching
-                const isoA2 =
-                  geo.properties.ISO_A2 ||
-                  geo.properties.iso_a2 ||
-                  '';
+                const isoA2 = geo.properties.ISO_A2 || geo.properties.iso_a2 || '';
                 const name = geo.properties.name || geo.properties.NAME || '';
                 const count = countMap.get(isoA2.toUpperCase()) || 0;
+                const showCountryFill = view === 'countries';
 
                 return (
                   <Geography
@@ -114,33 +155,83 @@ function WorldMap({ data }: WorldMapProps) {
                     onMouseMove={(e) => {
                       setTooltipPos({ x: e.clientX, y: e.clientY });
                     }}
-                    onMouseLeave={() => {
-                      setTooltipContent('');
-                    }}
+                    onMouseLeave={() => setTooltipContent('')}
                     style={{
                       default: {
-                        fill: count > 0 ? getColor(count) : palette.bgCard,
+                        fill: showCountryFill && count > 0 ? getCountryColor(count) : palette.bgCard,
                         stroke: palette.border,
                         strokeWidth: 0.5,
                         outline: 'none',
                       },
                       hover: {
-                        fill: count > 0 ? palette.accent : 'rgba(255,255,255,0.1)',
+                        fill:
+                          showCountryFill && count > 0
+                            ? palette.accent
+                            : 'rgba(255,255,255,0.08)',
                         stroke: palette.textDim,
                         strokeWidth: 0.75,
                         outline: 'none',
                         cursor: 'pointer',
                       },
-                      pressed: {
-                        fill: palette.accentDim,
-                        outline: 'none',
-                      },
+                      pressed: { fill: palette.accentDim, outline: 'none' },
                     }}
                   />
                 );
               })
             }
           </Geographies>
+
+          {/* City markers */}
+          {view === 'cities' &&
+            cityData
+              .filter((c) => c.lat && c.lng)
+              .map((city, i) => {
+                const r = getCityRadius(city.count);
+                return (
+                  <Marker key={i} coordinates={[city.lng, city.lat]}>
+                    <circle
+                      r={r}
+                      fill={palette.accent}
+                      fillOpacity={0.6}
+                      stroke={palette.accent}
+                      strokeWidth={1}
+                      strokeOpacity={0.9}
+                      onMouseEnter={(e) => {
+                        setTooltipContent(
+                          `${city.city}, ${city.country}: ${city.count.toLocaleString()} events`
+                        );
+                        setTooltipPos({
+                          x: (e as unknown as MouseEvent).clientX,
+                          y: (e as unknown as MouseEvent).clientY,
+                        });
+                      }}
+                      onMouseMove={(e) => {
+                        setTooltipPos({
+                          x: (e as unknown as MouseEvent).clientX,
+                          y: (e as unknown as MouseEvent).clientY,
+                        });
+                      }}
+                      onMouseLeave={() => setTooltipContent('')}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    {/* Label for top cities */}
+                    {city.count >= maxCityCount * 0.3 && (
+                      <text
+                        textAnchor="middle"
+                        y={-r - 4}
+                        style={{
+                          fontFamily: '-apple-system, sans-serif',
+                          fontSize: 9,
+                          fill: palette.textDim,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {city.city}
+                      </text>
+                    )}
+                  </Marker>
+                );
+              })}
         </ZoomableGroup>
       </ComposableMap>
 
@@ -154,20 +245,43 @@ function WorldMap({ data }: WorldMapProps) {
           mt: 1,
         }}
       >
-        <Typography variant="caption" sx={{ color: palette.textMuted }}>
-          0
-        </Typography>
-        <Box
-          sx={{
-            width: 120,
-            height: 8,
-            borderRadius: 4,
-            background: `linear-gradient(to right, ${palette.bgCard}, ${palette.accentDim}, ${palette.accent})`,
-          }}
-        />
-        <Typography variant="caption" sx={{ color: palette.textMuted }}>
-          {maxCount.toLocaleString()}
-        </Typography>
+        {view === 'countries' ? (
+          <>
+            <Typography variant="caption" sx={{ color: palette.textMuted }}>
+              0
+            </Typography>
+            <Box
+              sx={{
+                width: 120,
+                height: 8,
+                borderRadius: 4,
+                background: `linear-gradient(to right, ${palette.bgCard}, ${palette.accentDim}, ${palette.accent})`,
+              }}
+            />
+            <Typography variant="caption" sx={{ color: palette.textMuted }}>
+              {maxCountryCount.toLocaleString()}
+            </Typography>
+          </>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <svg width="8" height="8">
+                <circle cx="4" cy="4" r="3" fill={palette.accent} fillOpacity={0.6} />
+              </svg>
+              <Typography variant="caption" sx={{ color: palette.textMuted }}>
+                fewer
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <svg width="20" height="20">
+                <circle cx="10" cy="10" r="9" fill={palette.accent} fillOpacity={0.6} />
+              </svg>
+              <Typography variant="caption" sx={{ color: palette.textMuted }}>
+                more events
+              </Typography>
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

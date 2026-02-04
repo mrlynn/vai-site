@@ -62,6 +62,8 @@ interface Stats {
   eventsByContext: { context: string; count: number }[];
   eventsByTab: { tab: string; count: number }[];
   eventsByCommand: { command: string; count: number }[];
+  eventsByCity: { city: string; region: string; country: string; count: number }[];
+  cityLocations: { city: string; country: string; count: number; lat: number; lng: number }[];
   dailyActivity: { date: string; count: number }[];
   hourlyDistribution: { hour: number; count: number }[];
   recentEvents: Record<string, unknown>[];
@@ -546,7 +548,10 @@ export default function Dashboard() {
                     {stats.eventsByCountry.length} countries
                   </Typography>
                 </Box>
-                <WorldMap data={stats.eventsByCountry} />
+                <WorldMap
+                  countryData={stats.eventsByCountry}
+                  cityData={stats.cityLocations}
+                />
               </Card>
             )}
 
@@ -597,6 +602,20 @@ export default function Dashboard() {
                   valueKey="count"
                 />
               </Grid>
+              {stats.eventsByCity && stats.eventsByCity.length > 0 && (
+                <Grid size={{ xs: 12, md: 6, lg: 4 }}>
+                  <DataTable
+                    title="By City"
+                    icon={<PublicIcon sx={{ color: palette.purple, fontSize: 20 }} />}
+                    rows={stats.eventsByCity.map((c) => ({
+                      city: `${c.city}, ${c.country}`,
+                      count: c.count,
+                    }))}
+                    labelKey="city"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
               <Grid size={{ xs: 12, md: 6, lg: 4 }}>
                 <DataTable
                   title="CLI Commands"
