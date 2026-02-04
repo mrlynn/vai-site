@@ -199,7 +199,7 @@ export default function Dashboard() {
 
   // Persist API key in sessionStorage
   useEffect(() => {
-    const stored = sessionStorage.getItem('vai_dashboard_key');
+    const stored = localStorage.getItem('vai_dashboard_key');
     if (stored) {
       setApiKey(stored);
       setAuthenticated(true);
@@ -215,14 +215,14 @@ export default function Dashboard() {
       if (res.status === 401) {
         setError('Invalid API key');
         setAuthenticated(false);
-        sessionStorage.removeItem('vai_dashboard_key');
+        localStorage.removeItem('vai_dashboard_key');
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setStats(data);
       setAuthenticated(true);
-      sessionStorage.setItem('vai_dashboard_key', apiKey);
+      localStorage.setItem('vai_dashboard_key', apiKey);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stats');
     } finally {
