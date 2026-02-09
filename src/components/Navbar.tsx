@@ -15,23 +15,35 @@ import {
   ListItemText,
   useMediaQuery,
   useTheme,
+  Chip,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import StarIcon from '@mui/icons-material/Star';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { palette } from '@/theme/theme';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const navItems = [
+  { label: 'Why Voyage AI', href: '#why-voyage' },
   { label: 'Features', href: '#features' },
   { label: 'Models', href: '#models' },
   { label: 'CLI', href: '#cli-demo' },
-  { label: 'Desktop App', href: '#desktop' },
+  { label: 'Docs', href: 'https://github.com/mrlynn/voyageai-cli#readme', external: true },
 ];
 
 export default function Navbar() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [stars, setStars] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then((res) => res.json())
+      .then((data) => setStars(data.stars))
+      .catch(() => setStars(null));
+  }, []);
 
   return (
     <>
@@ -64,13 +76,16 @@ export default function Navbar() {
             </Typography>
 
             {!isMobile && (
-              <Box sx={{ display: 'flex', gap: 1, flexGrow: 1 }}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1 }}>
                 {navItems.map((item) => (
                   <Button
                     key={item.label}
                     href={item.href}
+                    target={item.external ? '_blank' : undefined}
+                    rel={item.external ? 'noopener noreferrer' : undefined}
                     sx={{
                       color: palette.textDim,
+                      fontSize: '0.9rem',
                       '&:hover': { color: palette.text, bgcolor: 'rgba(255,255,255,0.05)' },
                     }}
                   >
@@ -82,14 +97,66 @@ export default function Navbar() {
 
             <Box sx={{ flexGrow: isMobile ? 1 : 0 }} />
 
-            <IconButton
+            {/* GitHub with stars */}
+            <Box
+              component="a"
               href="https://github.com/mrlynn/voyageai-cli"
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ color: palette.textDim, '&:hover': { color: palette.text } }}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.8,
+                px: 1.5,
+                py: 0.6,
+                borderRadius: 2,
+                textDecoration: 'none',
+                color: palette.textDim,
+                transition: 'all 0.2s',
+                '&:hover': { 
+                  bgcolor: 'rgba(255,255,255,0.05)',
+                  color: palette.text,
+                },
+              }}
             >
-              <GitHubIcon />
-            </IconButton>
+              <GitHubIcon sx={{ fontSize: 20 }} />
+              {stars !== null && stars > 0 && (
+                <Chip
+                  icon={<StarIcon sx={{ fontSize: 12, color: '#FFD700 !important' }} />}
+                  label={stars >= 1000 ? `${(stars / 1000).toFixed(1)}k` : stars}
+                  size="small"
+                  sx={{
+                    height: 22,
+                    bgcolor: 'rgba(255, 215, 0, 0.1)',
+                    color: '#FFD700',
+                    border: '1px solid rgba(255, 215, 0, 0.25)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    '& .MuiChip-icon': { ml: 0.5 },
+                  }}
+                />
+              )}
+            </Box>
+
+            {/* Get Started CTA */}
+            {!isMobile && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<RocketLaunchIcon sx={{ fontSize: 16 }} />}
+                href="#cli-demo"
+                sx={{
+                  ml: 2,
+                  bgcolor: palette.accent,
+                  color: palette.bg,
+                  fontWeight: 700,
+                  px: 2.5,
+                  '&:hover': { bgcolor: palette.accentDim },
+                }}
+              >
+                Get Started
+              </Button>
+            )}
 
             {isMobile && (
               <IconButton
@@ -108,7 +175,7 @@ export default function Navbar() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
-          sx: { bgcolor: palette.bgSurface, width: 260 },
+          sx: { bgcolor: palette.bgSurface, width: 280 },
         }}
       >
         <List sx={{ pt: 4 }}>
@@ -117,12 +184,30 @@ export default function Navbar() {
               <ListItemButton
                 component="a"
                 href={item.href}
+                target={item.external ? '_blank' : undefined}
                 onClick={() => setDrawerOpen(false)}
               >
                 <ListItemText primary={item.label} sx={{ color: palette.text }} />
               </ListItemButton>
             </ListItem>
           ))}
+          <ListItem disablePadding sx={{ mt: 2, px: 2 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              startIcon={<RocketLaunchIcon />}
+              href="#cli-demo"
+              onClick={() => setDrawerOpen(false)}
+              sx={{
+                bgcolor: palette.accent,
+                color: palette.bg,
+                fontWeight: 700,
+                '&:hover': { bgcolor: palette.accentDim },
+              }}
+            >
+              Get Started
+            </Button>
+          </ListItem>
         </List>
       </Drawer>
     </>

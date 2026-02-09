@@ -1,44 +1,57 @@
 'use client';
 
-import { Box, Card, CardContent, Container, Typography } from '@mui/material';
+import { Box, Card, CardContent, Container, Typography, Link } from '@mui/material';
 import Grid from '@mui/material/Grid2';
+import BoltIcon from '@mui/icons-material/Bolt';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import ImageIcon from '@mui/icons-material/Image';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SpeedIcon from '@mui/icons-material/Speed';
+import SchoolIcon from '@mui/icons-material/School';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { palette } from '@/theme/theme';
 
 const features = [
   {
-    icon: '⚡',
+    icon: <BoltIcon />,
     title: 'Embed',
-    description: 'Generate vector embeddings for any text using Voyage AI\'s state-of-the-art models.',
+    description: 'Generate SOTA embeddings with Voyage AI\'s models — #1 on MTEB at half the cost of OpenAI.',
+    tryLink: 'Embed',
     color: palette.accent,
   },
   {
-    icon: '⚖️',
+    icon: <CompareArrowsIcon />,
     title: 'Compare',
-    description: 'Measure cosine similarity, dot product, and euclidean distance between texts.',
+    description: 'Measure semantic similarity between texts with cosine, dot product, and euclidean distance.',
+    tryLink: 'Compare',
     color: palette.blue,
   },
   {
-    icon: '🔮',
+    icon: <ImageIcon />,
     title: 'Multimodal',
-    description: 'Compare images and text in the same vector space with multimodal embeddings.',
+    description: 'Embed images and text in a shared vector space — search images with text and vice versa.',
+    tryLink: 'Multimodal',
     color: palette.purple,
   },
   {
-    icon: '🔍',
+    icon: <FilterListIcon />,
     title: 'Rerank',
-    description: 'Re-order documents by semantic relevance to improve search quality.',
+    description: 'Neural reranking improves search precision by 15-30%. Two-stage retrieval made easy.',
+    tryLink: 'Rerank',
     color: '#FF6B6B',
   },
   {
-    icon: '⏱',
+    icon: <SpeedIcon />,
     title: 'Benchmark',
-    description: 'Compare model latency, embedding quality, and costs across different models.',
+    description: 'Compare latency, quality, and cost across models. Make data-driven decisions.',
+    tryLink: 'Benchmark',
     color: '#FFA94D',
   },
   {
-    icon: '📚',
+    icon: <SchoolIcon />,
     title: 'Explore',
-    description: 'Learn about embeddings, vector search, and RAG concepts with interactive guides.',
+    description: '22 interactive guides on embeddings, RAG, vector search, and semantic similarity.',
+    tryLink: 'Explore',
     color: '#69DB7C',
   },
 ];
@@ -72,7 +85,7 @@ export default function Features() {
             mx: 'auto',
           }}
         >
-          Six powerful tools in one CLI — from generating embeddings to benchmarking models.
+          Six powerful tools in one CLI — from generating embeddings to benchmarking models and building RAG pipelines.
         </Typography>
 
         <Grid container spacing={3}>
@@ -83,6 +96,8 @@ export default function Features() {
                   height: '100%',
                   bgcolor: palette.bgCard,
                   transition: 'all 0.25s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': {
                     transform: 'translateY(-4px)',
                     borderColor: `${feature.color}66`,
@@ -90,10 +105,9 @@ export default function Features() {
                   },
                 }}
               >
-                <CardContent sx={{ p: 3.5 }}>
+                <CardContent sx={{ p: 3.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <Box
                     sx={{
-                      fontSize: '2rem',
                       mb: 2,
                       width: 52,
                       height: 52,
@@ -102,6 +116,7 @@ export default function Features() {
                       justifyContent: 'center',
                       borderRadius: 2,
                       bgcolor: `${feature.color}15`,
+                      color: feature.color,
                     }}
                   >
                     {feature.icon}
@@ -113,10 +128,31 @@ export default function Features() {
                     {feature.title}
                   </Typography>
                   <Typography
-                    sx={{ color: palette.textMuted, lineHeight: 1.6, fontSize: '0.95rem' }}
+                    sx={{ color: palette.textMuted, lineHeight: 1.6, fontSize: '0.95rem', flex: 1 }}
                   >
                     {feature.description}
                   </Typography>
+                  <Link
+                    href={`https://github.com/mrlynn/voyageai-cli#${feature.tryLink.toLowerCase()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    underline="none"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      mt: 2,
+                      color: feature.color,
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        gap: 1,
+                      },
+                    }}
+                  >
+                    Try it <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                  </Link>
                 </CardContent>
               </Card>
             </Grid>

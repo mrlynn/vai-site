@@ -1,17 +1,54 @@
 'use client';
 
-import { Box, Button, Container, Typography, Chip, Snackbar } from '@mui/material';
+import { Box, Button, Container, Typography, Chip, Snackbar, Skeleton } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import StarIcon from '@mui/icons-material/Star';
+import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
 import { palette } from '@/theme/theme';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+interface Stats {
+  stars: number;
+  downloads: number;
+}
 
 export default function Hero() {
   const [copied, setCopied] = useState(false);
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [typedText, setTypedText] = useState('');
+  const fullCommand = 'vai embed "Hello, vector world!"';
+
+  useEffect(() => {
+    // Fetch GitHub/npm stats
+    fetch('/api/stats')
+      .then((res) => res.json())
+      .then((data) => setStats(data))
+      .catch(() => setStats({ stars: 0, downloads: 0 }));
+  }, []);
+
+  // Typewriter effect for terminal
+  useEffect(() => {
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i <= fullCommand.length) {
+        setTypedText(fullCommand.slice(0, i));
+        i++;
+      } else {
+        clearInterval(timer);
+      }
+    }, 60);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleCopyInstall = () => {
     navigator.clipboard.writeText('npm install -g voyageai-cli');
     setCopied(true);
+  };
+
+  const formatNumber = (n: number): string => {
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+    return n.toString();
   };
 
   return (
@@ -41,7 +78,7 @@ export default function Hero() {
 
       <Container maxWidth="md" sx={{ position: 'relative', textAlign: 'center' }}>
         <Chip
-          label="Open Source CLI Tool"
+          label="Open Source Developer Tool"
           size="small"
           sx={{
             mb: 3,
@@ -52,20 +89,29 @@ export default function Hero() {
           }}
         />
 
+        {/* Value-first headline */}
         <Typography
           variant="h1"
           sx={{
-            fontSize: { xs: '3rem', sm: '4rem', md: '5rem' },
+            fontSize: { xs: '2.2rem', sm: '3rem', md: '3.8rem' },
             fontWeight: 800,
-            lineHeight: 1.1,
+            lineHeight: 1.15,
             mb: 2,
-            background: `linear-gradient(135deg, ${palette.text} 0%, ${palette.accent} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: palette.text,
           }}
         >
-          Vai
+          Ship semantic search{' '}
+          <Box
+            component="span"
+            sx={{
+              background: `linear-gradient(135deg, ${palette.accent} 0%, ${palette.blue} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            in minutes
+          </Box>
         </Typography>
 
         <Typography
@@ -74,27 +120,91 @@ export default function Hero() {
             color: palette.textDim,
             fontWeight: 400,
             mb: 2,
-            fontSize: { xs: '1.1rem', md: '1.35rem' },
-            maxWidth: 600,
+            fontSize: { xs: '1.1rem', md: '1.3rem' },
+            maxWidth: 580,
             mx: 'auto',
+            lineHeight: 1.5,
           }}
         >
-          Explore Voyage AI embeddings from your terminal — or your desktop.
+          The complete developer toolkit for Voyage AI embeddings, 
+          vector search, and RAG pipelines.
         </Typography>
 
         <Typography
           sx={{
             color: palette.textMuted,
-            mb: 5,
+            mb: 4,
             fontSize: { xs: '0.95rem', md: '1.05rem' },
-            maxWidth: 560,
+            maxWidth: 520,
             mx: 'auto',
             lineHeight: 1.6,
           }}
         >
-          CLI + Desktop App + Web Playground for Voyage AI embeddings, reranking,
-          and MongoDB Atlas Vector Search.
+          Terminal, browser, or desktop — embed, compare, benchmark, 
+          and deploy with MongoDB Atlas Vector Search.
         </Typography>
+
+        {/* Social proof badges */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 2,
+            mb: 4,
+            flexWrap: 'wrap',
+          }}
+        >
+          {stats ? (
+            <>
+              <Chip
+                icon={<StarIcon sx={{ fontSize: 16 }} />}
+                label={`${formatNumber(stats.stars)} stars`}
+                component="a"
+                href="https://github.com/mrlynn/voyageai-cli"
+                target="_blank"
+                rel="noopener noreferrer"
+                clickable
+                sx={{
+                  bgcolor: 'rgba(255, 215, 0, 0.1)',
+                  color: '#FFD700',
+                  border: '1px solid rgba(255, 215, 0, 0.3)',
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: 'rgba(255, 215, 0, 0.15)' },
+                }}
+              />
+              <Chip
+                icon={<DownloadForOfflineIcon sx={{ fontSize: 16 }} />}
+                label={`${formatNumber(stats.downloads)}/month`}
+                component="a"
+                href="https://www.npmjs.com/package/voyageai-cli"
+                target="_blank"
+                rel="noopener noreferrer"
+                clickable
+                sx={{
+                  bgcolor: 'rgba(203, 56, 55, 0.1)',
+                  color: '#CB3837',
+                  border: '1px solid rgba(203, 56, 55, 0.3)',
+                  fontWeight: 600,
+                  '&:hover': { bgcolor: 'rgba(203, 56, 55, 0.15)' },
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <Skeleton variant="rounded" width={90} height={32} sx={{ bgcolor: palette.bgSurface }} />
+              <Skeleton variant="rounded" width={110} height={32} sx={{ bgcolor: palette.bgSurface }} />
+            </>
+          )}
+          <Chip
+            label="#1 MTEB Ranking"
+            sx={{
+              bgcolor: 'rgba(0, 237, 100, 0.1)',
+              color: palette.accent,
+              border: `1px solid ${palette.accent}33`,
+              fontWeight: 600,
+            }}
+          />
+        </Box>
 
         <Box
           sx={{
@@ -155,10 +265,10 @@ export default function Hero() {
           </Button>
         </Box>
 
-        {/* Terminal preview */}
+        {/* Animated terminal preview */}
         <Box
           sx={{
-            maxWidth: 520,
+            maxWidth: 560,
             mx: 'auto',
             bgcolor: palette.bgSurface,
             border: `1px solid ${palette.border}`,
@@ -188,19 +298,33 @@ export default function Hero() {
               fontSize: '0.85rem',
               lineHeight: 1.8,
               textAlign: 'left',
+              minHeight: 72,
             }}
           >
-            <Box component="span" sx={{ color: palette.accent }}>
-              $
-            </Box>
-            <Box component="span" sx={{ color: palette.text }}>
-              {' '}
-              vai embed &quot;Hello, vector world!&quot;
-            </Box>
-            <br />
-            <Box component="span" sx={{ color: palette.textMuted }}>
-              ✓ Generated 1024-dim embedding in 142ms
-            </Box>
+            <Box component="span" sx={{ color: palette.accent }}>$</Box>
+            <Box component="span" sx={{ color: palette.text }}> {typedText}</Box>
+            <Box 
+              component="span" 
+              sx={{ 
+                display: 'inline-block',
+                width: 8,
+                height: 16,
+                bgcolor: palette.accent,
+                ml: 0.5,
+                animation: 'blink 1s step-end infinite',
+                '@keyframes blink': {
+                  '50%': { opacity: 0 },
+                },
+              }} 
+            />
+            {typedText === fullCommand && (
+              <>
+                <br />
+                <Box component="span" sx={{ color: palette.textMuted }}>
+                  ✓ Generated 1024-dim embedding in 142ms
+                </Box>
+              </>
+            )}
           </Box>
         </Box>
       </Container>
