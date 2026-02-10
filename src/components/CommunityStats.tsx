@@ -16,8 +16,8 @@ interface Stats {
   locations: number;
   contexts: {
     cli?: number;
-    playground?: number;
-    desktop?: number;
+    web?: number;
+    electron?: number;
   };
 }
 
@@ -149,8 +149,8 @@ export default function CommunityStats() {
   const countries = stats?.countries || 0;
   const cities = stats?.cities || 0;
   const cliEvents = stats?.contexts?.cli || 0;
-  const playgroundEvents = stats?.contexts?.playground || 0;
-  const desktopEvents = stats?.contexts?.desktop || 0;
+  const webEvents = stats?.contexts?.web || 0;
+  const electronEvents = stats?.contexts?.electron || 0;
 
   return (
     <Box
@@ -287,9 +287,9 @@ export default function CommunityStats() {
             loading={loading}
           />
           <StatBox
-            icon={<WebIcon sx={{ fontSize: 28 }} />}
-            value={playgroundEvents + desktopEvents}
-            label="Playground Sessions"
+            icon={<DesktopWindowsIcon sx={{ fontSize: 28 }} />}
+            value={webEvents + electronEvents}
+            label="App Sessions"
             color="#FF6B6B"
             loading={loading}
           />
