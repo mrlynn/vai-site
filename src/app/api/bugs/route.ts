@@ -31,8 +31,8 @@ setInterval(() => {
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export async function OPTIONS() {
@@ -203,4 +203,61 @@ ${bug.errorMessage ? `\`\`\`\n${bug.errorMessage}\n\`\`\`` : 'No error message'}
 `);
 
   return `https://github.com/mrlynn/voyageai-cli/issues/new?title=${title}&body=${body}&labels=bug`;
+}
+
+export async function PATCH(request: NextRequest) {
+  // Auth check
+  const authHeader = request.headers.get('authorization');
+  const expectedToken = process.env.BUGS_ADMIN_TOKEN;
+
+  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401, headers: CORS_HEADERS }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const { bugId, status } = body;
+
+    if (!bugId || !status) {
+      return NextResponse.json(
+        { error: 'bugId and status are required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const validStatuses = ['new', 'investigating', 'resolved', 'closed', 'wontfix'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const db = await getDb();
+    const result = await db.collection('bugs').updateOne(
+      { bugId },
+      { $set: { status, updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: 'Bug not found' },
+        { status: 404, headers: CORS_HEADERS }
+      );
+    }
+
+    return NextResponse.json(
+      { ok: true, bugId, status },
+      { headers: CORS_HEADERS }
+    );
+  } catch (error) {
+    console.error('Bugs PATCH error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500, headers: CORS_HEADERS }
+    );
+  }
 }
