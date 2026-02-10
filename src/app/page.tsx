@@ -5,6 +5,7 @@ import Features from '@/components/Features';
 import Models from '@/components/Models';
 import CliDemo from '@/components/CliDemo';
 import DesktopApp from '@/components/DesktopApp';
+import CommunityStats from '@/components/CommunityStats';
 import Footer from '@/components/Footer';
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
       <Models />
       <CliDemo />
       <DesktopApp />
+      <CommunityStats />
       <Footer />
     </main>
   );
