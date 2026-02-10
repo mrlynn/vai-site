@@ -58,7 +58,7 @@ export default function Footer() {
               />
             </Box>
             <Typography sx={{ color: palette.textMuted, fontSize: '0.9rem', lineHeight: 1.7, mb: 2 }}>
-              The complete developer toolkit for Voyage AI embeddings and MongoDB Atlas Vector Search.
+              A community-built developer toolkit for exploring Voyage AI embeddings and MongoDB Atlas Vector Search.
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <IconButton
@@ -202,27 +202,9 @@ export default function Footer() {
             </Link>
           </Typography>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Link
-              href="https://voyageai.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                color: palette.textMuted,
-                fontSize: '0.8rem',
-                textDecoration: 'none',
-                '&:hover': { color: palette.text },
-              }}
-            >
-              Powered by Voyage AI
-            </Link>
-            <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem' }}>
-              Open source on GitHub
-            </Typography>
-          </Box>
+          <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', textAlign: { xs: 'center', sm: 'right' }, maxWidth: 400 }}>
+            Community project — not affiliated with or endorsed by MongoDB, Inc. or Voyage AI, Inc.
+          </Typography>
         </Box>
       </Container>
     </Box>

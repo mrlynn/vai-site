@@ -83,7 +83,7 @@ export default function WhyVoyageAI() {
       <Container maxWidth="lg" sx={{ position: 'relative' }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
           <Chip
-            label="Why Voyage AI?"
+            label="Learn About Voyage AI"
             size="small"
             sx={{
               mb: 2,
@@ -101,7 +101,7 @@ export default function WhyVoyageAI() {
               color: palette.text,
             }}
           >
-            Not all embeddings are created equal
+            Why I built this around Voyage AI
           </Typography>
           <Typography
             sx={{
@@ -112,8 +112,8 @@ export default function WhyVoyageAI() {
               lineHeight: 1.7,
             }}
           >
-            Voyage AI uses a Mixture-of-Experts architecture to deliver state-of-the-art quality 
-            at a fraction of the cost. Here&apos;s why leading companies choose Voyage AI.
+            After evaluating embedding providers, Voyage AI stood out for quality and cost. 
+            Here&apos;s what makes their models worth exploring.
           </Typography>
         </Box>
 
@@ -176,31 +176,30 @@ export default function WhyVoyageAI() {
           ))}
         </Grid>
 
-        {/* Comparison callout */}
+        {/* Community tool callout */}
         <Box
           sx={{
             mt: 6,
             p: 4,
             bgcolor: palette.bgCard,
-            border: `1px solid ${palette.accent}33`,
+            border: `1px solid ${palette.border}`,
             borderRadius: 3,
             textAlign: 'center',
           }}
         >
           <Typography
             sx={{
-              fontSize: { xs: '1.1rem', md: '1.25rem' },
-              color: palette.text,
-              fontWeight: 500,
+              fontSize: { xs: '1rem', md: '1.1rem' },
+              color: palette.textMuted,
               lineHeight: 1.8,
             }}
           >
-            <Box component="span" sx={{ color: palette.accent, fontWeight: 700 }}>
-              Powered by MongoDB + Voyage AI
+            <Box component="span" sx={{ color: palette.text, fontWeight: 600 }}>
+              vai is a community-built developer tool
             </Box>
             {' — '}
-            the vai CLI is your gateway to building production-ready vector search with the 
-            industry&apos;s best embedding models and MongoDB Atlas Vector Search.
+            designed to help you explore Voyage AI embeddings and MongoDB Atlas Vector Search. 
+            Not affiliated with Voyage AI or MongoDB.
           </Typography>
         </Box>
       </Container>

@@ -78,7 +78,7 @@ export default function Hero() {
 
       <Container maxWidth="md" sx={{ position: 'relative', textAlign: 'center' }}>
         <Chip
-          label="Open Source Developer Tool"
+          label="Open Source Community Tool"
           size="small"
           sx={{
             mb: 3,

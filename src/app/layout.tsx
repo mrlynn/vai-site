@@ -3,9 +3,9 @@ import ThemeRegistry from '@/theme/ThemeRegistry';
 import Script from 'next/script';
 
 export const metadata: Metadata = {
-  title: 'Vai — Ship Semantic Search in Minutes | Voyage AI + MongoDB',
+  title: 'Vai — Open Source Toolkit for Voyage AI Embeddings',
   description:
-    'The complete developer toolkit for Voyage AI embeddings, vector search, and RAG pipelines. CLI, desktop app, and web playground. #1 MTEB ranking at 83% lower cost than OpenAI.',
+    'Community-built CLI, desktop app, and web playground for exploring Voyage AI embeddings and MongoDB Atlas Vector Search. Open source developer tool by Michael Lynn.',
   keywords: [
     'voyage ai',
     'embeddings',
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   authors: [{ name: 'Michael Lynn', url: 'https://mlynn.org' }],
   creator: 'Michael Lynn',
   openGraph: {
-    title: 'Vai — Ship Semantic Search in Minutes',
+    title: 'Vai — Open Source Voyage AI Toolkit',
     description:
-      'The complete developer toolkit for Voyage AI embeddings and MongoDB Atlas Vector Search. #1 MTEB ranking at 83% lower cost.',
+      'Community-built CLI, desktop app, and playground for exploring Voyage AI embeddings. Open source by Michael Lynn.',
     url: 'https://vai.mlynn.org',
     siteName: 'Vai',
     type: 'website',
@@ -39,9 +39,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Vai — Ship Semantic Search in Minutes',
+    title: 'Vai — Open Source Voyage AI Toolkit',
     description:
-      'The complete developer toolkit for Voyage AI embeddings and MongoDB Atlas Vector Search.',
+      'Community-built CLI and desktop app for exploring Voyage AI embeddings. Open source by @mlaboratory.',
     creator: '@mlaboratory',
     images: ['https://vai.mlynn.org/og-image.png'],
   },
@@ -74,7 +74,7 @@ const jsonLd = {
     priceCurrency: 'USD',
   },
   description:
-    'CLI, desktop app, and web playground for Voyage AI embeddings, vector search, and RAG pipelines with MongoDB Atlas.',
+    'Community-built open source CLI and desktop app for exploring Voyage AI embeddings and MongoDB Atlas Vector Search. Not affiliated with Voyage AI or MongoDB.',
   author: {
     '@type': 'Person',
     name: 'Michael Lynn',
@@ -83,12 +83,6 @@ const jsonLd = {
   url: 'https://vai.mlynn.org',
   downloadUrl: 'https://github.com/mrlynn/voyageai-cli/releases',
   softwareVersion: '1.20.0',
-  screenshot: 'https://vai.mlynn.org/screenshot.png',
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '5',
-    ratingCount: '12',
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
