@@ -241,7 +241,7 @@ ${context}`;
           // Fire-and-forget chat analytics (awaited for Vercel serverless)
           try {
             const client = await getClient();
-            const analyticsCol = client.db('vai').collection('chat_analytics');
+            const analyticsCol = client.db('vai_telemetry').collection('chat_analytics');
             const wordCount = fullResponse.split(/\s+/).filter(Boolean).length;
             await analyticsCol.insertOne({
               slug,
