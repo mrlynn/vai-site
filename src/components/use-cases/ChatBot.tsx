@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Fab,
@@ -15,6 +15,8 @@ import {
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import ReactMarkdown, { type Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { palette } from '@/theme/theme';
 
 interface Message {
@@ -37,6 +39,125 @@ export default function ChatBot({ slug, accentColor, suggestedQueries = [], onOp
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Markdown component overrides for assistant messages
+  const mdComponents: Components = useMemo(() => ({
+    p: ({ children }) => (
+      <Typography
+        variant="body2"
+        sx={{ color: palette.text, fontSize: '0.85rem', lineHeight: 1.6, mb: 0.75, '&:last-child': { mb: 0 } }}
+      >
+        {children}
+      </Typography>
+    ),
+    a: ({ href, children }) => (
+      <Box
+        component="a"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{
+          color: accentColor,
+          textDecoration: 'none',
+          fontWeight: 500,
+          '&:hover': { textDecoration: 'underline' },
+        }}
+      >
+        {children}
+      </Box>
+    ),
+    strong: ({ children }) => (
+      <Box component="strong" sx={{ fontWeight: 600, color: palette.text }}>
+        {children}
+      </Box>
+    ),
+    code: ({ children, className }) => {
+      const isBlock = className?.startsWith('language-');
+      if (isBlock) {
+        return (
+          <Box
+            component="pre"
+            sx={{
+              bgcolor: palette.bgSurface,
+              border: `1px solid ${palette.border}`,
+              borderRadius: 1,
+              p: 1.5,
+              my: 1,
+              overflowX: 'auto',
+              fontSize: '0.8rem',
+              fontFamily: 'monospace',
+              lineHeight: 1.5,
+              color: palette.text,
+            }}
+          >
+            <code>{children}</code>
+          </Box>
+        );
+      }
+      return (
+        <Box
+          component="code"
+          sx={{
+            bgcolor: palette.bgSurface,
+            px: 0.5,
+            py: 0.125,
+            borderRadius: 0.5,
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            color: accentColor,
+          }}
+        >
+          {children}
+        </Box>
+      );
+    },
+    ul: ({ children }) => (
+      <Box component="ul" sx={{ pl: 2.5, my: 0.5, color: palette.text, fontSize: '0.85rem', lineHeight: 1.6 }}>
+        {children}
+      </Box>
+    ),
+    ol: ({ children }) => (
+      <Box component="ol" sx={{ pl: 2.5, my: 0.5, color: palette.text, fontSize: '0.85rem', lineHeight: 1.6 }}>
+        {children}
+      </Box>
+    ),
+    li: ({ children }) => (
+      <Box component="li" sx={{ mb: 0.25 }}>
+        {children}
+      </Box>
+    ),
+    h1: ({ children }) => (
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: palette.text, mt: 1, mb: 0.5 }}>
+        {children}
+      </Typography>
+    ),
+    h2: ({ children }) => (
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: palette.text, mt: 1, mb: 0.5 }}>
+        {children}
+      </Typography>
+    ),
+    h3: ({ children }) => (
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: palette.text, mt: 0.75, mb: 0.25 }}>
+        {children}
+      </Typography>
+    ),
+    hr: () => (
+      <Box sx={{ borderTop: `1px solid ${palette.border}`, my: 1 }} />
+    ),
+    blockquote: ({ children }) => (
+      <Box
+        sx={{
+          borderLeft: `3px solid ${accentColor}`,
+          pl: 1.5,
+          my: 0.75,
+          color: palette.textDim,
+          fontStyle: 'italic',
+        }}
+      >
+        {children}
+      </Box>
+    ),
+  }), [accentColor]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -212,29 +333,30 @@ export default function ChatBot({ slug, accentColor, suggestedQueries = [], onOp
                     border: `1px solid ${msg.role === 'user' ? accentColor + '44' : palette.border}`,
                   }}
                 >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: palette.text,
-                      whiteSpace: 'pre-wrap',
-                      fontSize: '0.85rem',
-                      lineHeight: 1.5,
-                      '& code': {
-                        bgcolor: palette.bgSurface,
-                        px: 0.5,
-                        borderRadius: 0.5,
-                        fontFamily: 'monospace',
-                        fontSize: '0.8rem',
-                      },
-                    }}
-                  >
-                    {msg.content}
-                    {loading && i === messages.length - 1 && msg.role === 'assistant' && (
-                      <Box component="span" sx={{ ml: 0.5, opacity: 0.5 }}>
-                        ▊
-                      </Box>
-                    )}
-                  </Typography>
+                  {msg.role === 'user' ? (
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: palette.text,
+                        whiteSpace: 'pre-wrap',
+                        fontSize: '0.85rem',
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {msg.content}
+                    </Typography>
+                  ) : (
+                    <Box sx={{ '& > *:first-of-type': { mt: 0 }, '& > *:last-child': { mb: 0 } }}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                        {msg.content}
+                      </ReactMarkdown>
+                      {loading && i === messages.length - 1 && (
+                        <Box component="span" sx={{ ml: 0.5, opacity: 0.5 }}>
+                          ▊
+                        </Box>
+                      )}
+                    </Box>
+                  )}
                 </Box>
               </Box>
             ))}
