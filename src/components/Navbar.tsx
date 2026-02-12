@@ -27,6 +27,7 @@ const navItems = [
   { label: 'Why Voyage AI', href: '#why-voyage' },
   { label: 'Features', href: '#features' },
   { label: 'Models', href: '#models' },
+  { label: 'Use Cases', href: '/use-cases' },
   { label: 'CLI', href: '#cli-demo' },
   { label: 'MCP', href: '#mcp' },
   { label: 'Docs', href: 'https://github.com/mrlynn/voyageai-cli#readme', external: true },

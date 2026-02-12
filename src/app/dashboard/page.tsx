@@ -34,6 +34,11 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import TabIcon from '@mui/icons-material/Tab';
 import EventIcon from '@mui/icons-material/Event';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ChatIcon from '@mui/icons-material/Chat';
+import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
+import SpeedIcon from '@mui/icons-material/Speed';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { BarChart, LineChart } from '@mui/x-charts';
 import dynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
@@ -67,6 +72,15 @@ interface Stats {
   dailyActivity: { date: string; count: number }[];
   hourlyDistribution: { hour: number; count: number }[];
   recentEvents: Record<string, unknown>[];
+  useCasePageViews: { slug: string; count: number }[];
+  useCaseChatQueries: { slug: string; count: number }[];
+  useCaseChatModels: { model: string; count: number }[];
+  useCaseDownloads: { slug: string; count: number }[];
+  useCaseCtaClicks: { ctaType: string; slug: string; count: number }[];
+  useCaseChatTopSources: { source: string; slug: string; count: number }[];
+  useCaseDailyChat: { date: string; count: number }[];
+  useCaseAvgLatency: { slug: string; avgLatency: number; count: number }[];
+  recentChatQueries: Record<string, unknown>[];
 }
 
 function StatCard({
@@ -196,6 +210,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<string>('30');
+  const [activeTab, setActiveTab] = useState<'overview' | 'usecases'>('overview');
 
   // Persist API key in sessionStorage
   useEffect(() => {
@@ -393,13 +408,37 @@ export default function Dashboard() {
           </Box>
         </Box>
 
+        {/* Tab Switcher */}
+        <Box sx={{ mb: 3 }}>
+          <ToggleButtonGroup
+            value={activeTab}
+            exclusive
+            onChange={(_, v) => v && setActiveTab(v)}
+            size="small"
+            sx={{
+              '& .MuiToggleButton-root': {
+                color: palette.textMuted,
+                borderColor: palette.border,
+                px: 3,
+                '&.Mui-selected': {
+                  color: palette.accent,
+                  bgcolor: 'rgba(0, 237, 100, 0.1)',
+                },
+              },
+            }}
+          >
+            <ToggleButton value="overview">Overview</ToggleButton>
+            <ToggleButton value="usecases">Use Cases</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
 
-        {stats && (
+        {stats && activeTab === 'overview' && (
           <>
             {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -730,6 +769,230 @@ export default function Dashboard() {
                 </TableContainer>
               </CardContent>
             </Card>
+          </>
+        )}
+
+        {stats && activeTab === 'usecases' && (
+          <>
+            {/* Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Use Case Page Views"
+                  value={stats.useCasePageViews?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<VisibilityIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Chatbot Queries"
+                  value={stats.useCaseChatQueries?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<ChatIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Sample Downloads"
+                  value={stats.useCaseDownloads?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<DownloadForOfflineIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Avg Chat Latency"
+                  value={
+                    stats.useCaseAvgLatency?.length
+                      ? `${Math.round(stats.useCaseAvgLatency.reduce((s, e) => s + e.avgLatency * e.count, 0) / stats.useCaseAvgLatency.reduce((s, e) => s + e.count, 0))}ms`
+                      : '—'
+                  }
+                  icon={<SpeedIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Page Views by Slug */}
+            {stats.useCasePageViews?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <VisibilityIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Page Views by Use Case</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.useCasePageViews.map((e) => e.slug || 'unknown'),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.useCasePageViews.map((e) => e.count), color: palette.accent }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Daily Chat Queries */}
+            {stats.useCaseDailyChat?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TimelineIcon sx={{ color: palette.blue }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Daily Chatbot Queries</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <LineChart
+                    xAxis={[{
+                      data: stats.useCaseDailyChat.map((d) => new Date(d.date)),
+                      scaleType: 'time',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{
+                      data: stats.useCaseDailyChat.map((d) => d.count),
+                      color: palette.blue,
+                      area: true,
+                      showMark: false,
+                    }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Chat Queries by Slug */}
+            {stats.useCaseChatQueries?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <ChatIcon sx={{ color: palette.purple }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Chatbot Queries by Use Case</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.useCaseChatQueries.map((e) => e.slug || 'unknown'),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.useCaseChatQueries.map((e) => e.count), color: palette.purple }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Top Retrieved Sources */}
+            {stats.useCaseChatTopSources?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <BarChartIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Most Retrieved Source Documents</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 300 }}>
+                  <BarChart
+                    layout="horizontal"
+                    yAxis={[{
+                      data: stats.useCaseChatTopSources.slice(0, 10).map((e) => e.source.length > 25 ? e.source.slice(0, 25) + '…' : e.source),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10 },
+                    }]}
+                    xAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.useCaseChatTopSources.slice(0, 10).map((e) => e.count), color: palette.accent }]}
+                    height={280}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* CTA Click Breakdown */}
+            {stats.useCaseCtaClicks?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TouchAppIcon sx={{ color: palette.blue }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>CTA Click Breakdown</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.useCaseCtaClicks.map((e) => `${e.ctaType} (${e.slug})`),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.useCaseCtaClicks.map((e) => e.count), color: palette.blue }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Recent Chat Queries Table */}
+            {stats.recentChatQueries?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}` }}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Recent Chatbot Queries
+                  </Typography>
+                  <TableContainer
+                    component={Paper}
+                    sx={{ bgcolor: 'transparent', boxShadow: 'none', maxHeight: 500 }}
+                  >
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow>
+                          {['Slug', 'Model', 'Latency', 'Sources', 'Chunks', 'Time'].map((h) => (
+                            <TableCell
+                              key={h}
+                              sx={{
+                                bgcolor: palette.bgCard,
+                                color: palette.textMuted,
+                                borderColor: palette.border,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {h}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {stats.recentChatQueries.map((q, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell sx={{ borderColor: palette.border }}>
+                              <Chip
+                                label={String(q.slug || '—')}
+                                size="small"
+                                sx={{
+                                  bgcolor: 'rgba(0, 237, 100, 0.08)',
+                                  color: palette.accent,
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.75rem',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                              {String(q.model || '—')}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                              {q.latencyMs ? `${Number(q.latencyMs).toLocaleString()}ms` : '—'}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontSize: '0.8rem' }}>
+                              {Array.isArray(q.sources) ? (q.sources as string[]).length : '—'}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontSize: '0.8rem' }}>
+                              {String(q.contextChunks ?? '—')}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontSize: '0.8rem', color: palette.textDim }}>
+                              {q.timestamp ? new Date(String(q.timestamp)).toLocaleString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </Container>

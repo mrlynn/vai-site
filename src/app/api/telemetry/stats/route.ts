@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
 
     const rangeFilter = { receivedAt: { $gte: cutoff } };
 
+    const chatCol = db.collection('chat_analytics');
+    const chatRangeFilter = { timestamp: { $gte: cutoff } };
+
     const [
       totalEvents,
       totalEventsInRange,
@@ -41,6 +44,15 @@ export async function GET(request: NextRequest) {
       dailyActivity,
       hourlyDistribution,
       recentEvents,
+      useCasePageViews,
+      useCaseChatQueries,
+      useCaseChatModels,
+      useCaseDownloads,
+      useCaseCtaClicks,
+      useCaseChatTopSources,
+      useCaseDailyChat,
+      useCaseAvgLatency,
+      recentChatQueries,
     ] = await Promise.all([
       // Total events (all time)
       collection.countDocuments(),
@@ -189,6 +201,99 @@ export async function GET(request: NextRequest) {
         .limit(50)
         .project({ _id: 0 })
         .toArray(),
+
+      // Use case page views by slug
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'usecase_page_view' } },
+          { $group: { _id: '$slug', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // Chat queries by slug (from chat_analytics)
+      chatCol
+        .aggregate([
+          { $match: chatRangeFilter },
+          { $group: { _id: '$slug', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // Chat model usage
+      chatCol
+        .aggregate([
+          { $match: chatRangeFilter },
+          { $group: { _id: '$model', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // Sample doc downloads by slug
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'usecase_sample_docs_download' } },
+          { $group: { _id: '$slug', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // CTA clicks by type and slug
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'usecase_cta_click' } },
+          { $group: { _id: { ctaType: '$ctaType', slug: '$slug' }, count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // Top retrieved source docs
+      chatCol
+        .aggregate([
+          { $match: chatRangeFilter },
+          { $unwind: '$sources' },
+          { $group: { _id: { source: '$sources', slug: '$slug' }, count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 20 },
+        ])
+        .toArray(),
+
+      // Daily chat query volume
+      chatCol
+        .aggregate([
+          { $match: chatRangeFilter },
+          {
+            $group: {
+              _id: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ])
+        .toArray(),
+
+      // Average chat latency by slug
+      chatCol
+        .aggregate([
+          { $match: chatRangeFilter },
+          {
+            $group: {
+              _id: '$slug',
+              avgLatency: { $avg: '$latencyMs' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // Recent chat queries (last 50)
+      chatCol
+        .find({})
+        .sort({ timestamp: -1 })
+        .limit(50)
+        .project({ _id: 0, embedding: 0 })
+        .toArray(),
     ]);
 
     return NextResponse.json({
@@ -221,6 +326,27 @@ export async function GET(request: NextRequest) {
       dailyActivity: dailyActivity.map((e) => ({ date: e._id, count: e.count })),
       hourlyDistribution: hourlyDistribution.map((e) => ({ hour: e._id, count: e.count })),
       recentEvents,
+      useCasePageViews: useCasePageViews.map((e) => ({ slug: e._id, count: e.count })),
+      useCaseChatQueries: useCaseChatQueries.map((e) => ({ slug: e._id, count: e.count })),
+      useCaseChatModels: useCaseChatModels.map((e) => ({ model: e._id, count: e.count })),
+      useCaseDownloads: useCaseDownloads.map((e) => ({ slug: e._id, count: e.count })),
+      useCaseCtaClicks: useCaseCtaClicks.map((e) => ({
+        ctaType: e._id.ctaType,
+        slug: e._id.slug,
+        count: e.count,
+      })),
+      useCaseChatTopSources: useCaseChatTopSources.map((e) => ({
+        source: e._id.source,
+        slug: e._id.slug,
+        count: e.count,
+      })),
+      useCaseDailyChat: useCaseDailyChat.map((e) => ({ date: e._id, count: e.count })),
+      useCaseAvgLatency: useCaseAvgLatency.map((e) => ({
+        slug: e._id,
+        avgLatency: Math.round(e.avgLatency),
+        count: e.count,
+      })),
+      recentChatQueries,
     });
   } catch (error) {
     console.error('Stats error:', error);

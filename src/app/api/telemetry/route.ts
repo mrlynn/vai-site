@@ -99,6 +99,13 @@ export async function POST(request: NextRequest) {
       model: body.model || undefined,
       command: body.command || undefined,
       locale: body.locale || undefined,
+      // Use-case analytics fields
+      slug: body.slug || undefined,
+      queryLength: body.queryLength || undefined,
+      ctaType: body.ctaType || undefined,
+      filename: body.filename || undefined,
+      referrer: body.referrer || undefined,
+      userAgent: body.userAgent || undefined,
       timestamp: body.timestamp || new Date().toISOString(),
       receivedAt: new Date(),
       country,
