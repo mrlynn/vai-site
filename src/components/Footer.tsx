@@ -35,6 +35,12 @@ export default function Footer() {
           {/* Brand column */}
           <Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="vai logo"
+                sx={{ height: 28, width: 28 }}
+              />
               <Typography
                 sx={{
                   fontWeight: 800,
@@ -71,7 +77,7 @@ export default function Footer() {
                 <GitHubIcon fontSize="small" />
               </IconButton>
               <IconButton
-                href="https://x.com/mlaboratory"
+                href="https://x.com/mlynn"
                 target="_blank"
                 rel="noopener noreferrer"
                 size="small"

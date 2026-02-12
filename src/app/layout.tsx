@@ -41,8 +41,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Vai — Open Source Voyage AI Toolkit',
     description:
-      'Community-built CLI and desktop app for exploring Voyage AI embeddings. Open source by @mlaboratory.',
-    creator: '@mlaboratory',
+      'Community-built CLI and desktop app for exploring Voyage AI embeddings. Open source by @mlynn.',
+    creator: '@mlynn',
     images: ['https://vai.mlynn.org/og-image.png'],
   },
   robots: {
@@ -58,6 +58,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://vai.mlynn.org',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 

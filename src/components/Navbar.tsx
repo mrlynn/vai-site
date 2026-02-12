@@ -20,7 +20,6 @@ import {
 import MenuIcon from '@mui/icons-material/Menu';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import StarIcon from '@mui/icons-material/Star';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { palette } from '@/theme/theme';
 import { useState, useEffect } from 'react';
 
@@ -29,6 +28,7 @@ const navItems = [
   { label: 'Features', href: '#features' },
   { label: 'Models', href: '#models' },
   { label: 'CLI', href: '#cli-demo' },
+  { label: 'MCP', href: '#mcp' },
   { label: 'Docs', href: 'https://github.com/mrlynn/voyageai-cli#readme', external: true },
 ];
 
@@ -58,22 +58,36 @@ export default function Navbar() {
       >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
-            <Typography
-              variant="h6"
+            <Box
               component="a"
               href="#"
               sx={{
-                fontWeight: 800,
-                color: palette.accent,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
                 textDecoration: 'none',
-                fontSize: '1.5rem',
-                letterSpacing: '-0.03em',
                 mr: 4,
-                fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
               }}
             >
-              vai
-            </Typography>
+              <Box
+                component="img"
+                src="/logo.png"
+                alt="vai logo"
+                sx={{ height: 30, width: 30 }}
+              />
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 800,
+                  color: palette.accent,
+                  fontSize: '1.5rem',
+                  letterSpacing: '-0.03em',
+                  fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
+                }}
+              >
+                vai
+              </Typography>
+            </Box>
 
             {!isMobile && (
               <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1 }}>
@@ -143,7 +157,6 @@ export default function Navbar() {
               <Button
                 variant="contained"
                 size="small"
-                startIcon={<RocketLaunchIcon sx={{ fontSize: 16 }} />}
                 href="#cli-demo"
                 sx={{
                   ml: 2,
@@ -195,7 +208,6 @@ export default function Navbar() {
             <Button
               variant="contained"
               fullWidth
-              startIcon={<RocketLaunchIcon />}
               href="#cli-demo"
               onClick={() => setDrawerOpen(false)}
               sx={{

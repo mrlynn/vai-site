@@ -4,6 +4,7 @@ import WhyVoyageAI from '@/components/WhyVoyageAI';
 import Features from '@/components/Features';
 import Models from '@/components/Models';
 import CliDemo from '@/components/CliDemo';
+import McpServer from '@/components/McpServer';
 import DesktopApp from '@/components/DesktopApp';
 import CommunityStats from '@/components/CommunityStats';
 import Footer from '@/components/Footer';
@@ -17,6 +18,7 @@ export default function Home() {
       <Features />
       <Models />
       <CliDemo />
+      <McpServer />
       <DesktopApp />
       <CommunityStats />
       <Footer />
