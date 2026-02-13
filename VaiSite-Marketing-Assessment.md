@@ -1,4 +1,4 @@
-# vai.mlynn.org Marketing Site Assessment
+# vaicli.com Marketing Site Assessment
 
 **Prepared for: Michael Lynn — February 9, 2026**
 
@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-The vai.mlynn.org marketing site is a clean, well-engineered Next.js 15 application with MUI v6, deployed on Vercel. It features a single-page landing with 6 sections (Hero, Features, Models, CLI Demo, Desktop App, Footer) plus a hidden analytics dashboard at `/dashboard`. The tech stack is solid and the dark theme is visually cohesive.
+The vaicli.com marketing site is a clean, well-engineered Next.js 15 application with MUI v6, deployed on Vercel. It features a single-page landing with 6 sections (Hero, Features, Models, CLI Demo, Desktop App, Footer) plus a hidden analytics dashboard at `/dashboard`. The tech stack is solid and the dark theme is visually cohesive.
 
 However, as a marketing site tasked with driving developer awareness and adoption of the VoyageAI-CLI tool, it has significant gaps. The site reads more like a feature list than a persuasion engine. There's no "why" narrative, no social proof, no interactive demos, no video content, and no clear conversion funnel. A developer landing here gets what the tool does but not why they should care.
 
@@ -159,7 +159,7 @@ The same problem identified in the CLI assessment applies here. The site mention
 
 **Recommendations:**
 - Fix the "Signed & notarized" claim or implement signing
-- Use direct download links (vai.mlynn.org/download/mac, /windows, /linux) that redirect to the latest release assets
+- Use direct download links (vaicli.com/download/mac, /windows, /linux) that redirect to the latest release assets
 - Replace the static mockup with actual app screenshots or an animated GIF cycling through tabs
 - Add platform auto-detection: show the relevant download button first based on user-agent
 
@@ -288,7 +288,7 @@ If this file has ever been committed to a git repository (even momentarily), the
 
 ## 10. Conclusion
 
-The vai.mlynn.org site has a solid technical foundation — Next.js 15, MUI v6, good responsive design, and a clever telemetry system. But it's currently an engineer's idea of a marketing site: feature lists, model names, and terminal screenshots. What it lacks is the storytelling that converts visitors into users.
+The vaicli.com site has a solid technical foundation — Next.js 15, MUI v6, good responsive design, and a clever telemetry system. But it's currently an engineer's idea of a marketing site: feature lists, model names, and terminal screenshots. What it lacks is the storytelling that converts visitors into users.
 
 The three biggest wins are: (1) rewriting the hero and copy to lead with outcomes instead of features, (2) adding social proof to build credibility, and (3) creating a "Why Voyage AI?" narrative that positions the tool as a gateway to understanding Voyage AI's unique advantages.
 

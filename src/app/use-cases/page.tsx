@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: 'Industry Use Cases - Vai',
     description:
       'Domain-specific walkthroughs for building searchable knowledge bases with Voyage AI embeddings.',
-    url: 'https://vai.mlynn.org/use-cases',
+    url: 'https://vaicli.com/use-cases',
   },
 };
 

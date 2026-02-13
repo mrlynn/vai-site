@@ -214,7 +214,7 @@ export default function BugsAdminPage() {
               🐛 Bug Tracker
             </Typography>
             <Typography variant="body2" sx={{ color: '#889397' }}>
-              {bugs.length} total bugs • vai.mlynn.org
+              {bugs.length} total bugs • vaicli.com
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>

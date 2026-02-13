@@ -1,6 +1,6 @@
 # Vai — Marketing Site
 
-Marketing and landing page for [Vai](https://github.com/mrlynn/voyageai-cli) (voyageai-cli), hosted at [vai.mlynn.org](https://vai.mlynn.org).
+Marketing and landing page for [Vai](https://github.com/mrlynn/voyageai-cli) (voyageai-cli), hosted at [vaicli.com](https://vaicli.com).
 
 ## Stack
 
@@ -74,14 +74,14 @@ Returns aggregated telemetry stats. Protected by API key.
 1. Push to GitHub
 2. Import project in [Vercel](https://vercel.com)
 3. Add environment variables (`MONGODB_URI`, `TELEMETRY_API_KEY`)
-4. Configure domain: `vai.mlynn.org`
+4. Configure domain: `vaicli.com`
 5. Deploy
 
 ### Custom Domain Setup
 
 In your DNS provider, add a CNAME record:
 ```
-vai.mlynn.org → cname.vercel-dns.com
+vaicli.com → cname.vercel-dns.com
 ```
 
 Then add the domain in Vercel project settings → Domains.

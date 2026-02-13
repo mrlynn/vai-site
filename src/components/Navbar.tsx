@@ -30,7 +30,7 @@ const navItems = [
   { label: 'Use Cases', href: '/use-cases' },
   { label: 'CLI', href: '#cli-demo' },
   { label: 'MCP', href: '#mcp' },
-  { label: 'Docs', href: 'https://github.com/mrlynn/voyageai-cli#readme', external: true },
+  { label: 'Docs', href: 'https://docs.vaicli.com', external: true },
 ];
 
 export default function Navbar() {

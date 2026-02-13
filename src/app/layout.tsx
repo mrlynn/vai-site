@@ -25,12 +25,12 @@ export const metadata: Metadata = {
     title: 'Vai — Open Source Voyage AI Toolkit',
     description:
       'Community-built CLI, desktop app, and playground for exploring Voyage AI embeddings. Open source by Michael Lynn.',
-    url: 'https://vai.mlynn.org',
+    url: 'https://vaicli.com',
     siteName: 'Vai',
     type: 'website',
     images: [
       {
-        url: 'https://vai.mlynn.org/og-image.png',
+        url: 'https://vaicli.com/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Vai - Voyage AI Developer Toolkit',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     description:
       'Community-built CLI and desktop app for exploring Voyage AI embeddings. Open source by @mlynn.',
     creator: '@mlynn',
-    images: ['https://vai.mlynn.org/og-image.png'],
+    images: ['https://vaicli.com/og-image.png'],
   },
   robots: {
     index: true,
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: 'https://vai.mlynn.org',
+    canonical: 'https://vaicli.com',
   },
   icons: {
     icon: '/favicon.ico',
@@ -84,7 +84,7 @@ const jsonLd = {
     name: 'Michael Lynn',
     url: 'https://mlynn.org',
   },
-  url: 'https://vai.mlynn.org',
+  url: 'https://vaicli.com',
   downloadUrl: 'https://github.com/mrlynn/voyageai-cli/releases',
   softwareVersion: '1.20.0',
 };

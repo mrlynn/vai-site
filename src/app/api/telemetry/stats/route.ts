@@ -53,6 +53,18 @@ export async function GET(request: NextRequest) {
       useCaseDailyChat,
       useCaseAvgLatency,
       recentChatQueries,
+      // Game telemetry
+      gameSessionCount,
+      gameOverCount,
+      gameAvgScore,
+      gameHighScores,
+      gameAvgDuration,
+      gameTotalPlayTimeMs,
+      gameByCountry,
+      gameByTrigger,
+      gameDailyActivity,
+      gameScoreDistribution,
+      gameWaveDistribution,
     ] = await Promise.all([
       // Total events (all time)
       collection.countDocuments(),
@@ -294,6 +306,104 @@ export async function GET(request: NextRequest) {
         .limit(50)
         .project({ _id: 0, embedding: 0 })
         .toArray(),
+
+      // ── Game telemetry aggregations ──
+
+      // gameSessionCount
+      collection.countDocuments({ ...rangeFilter, event: 'vsi_game_start' }),
+
+      // gameOverCount
+      collection.countDocuments({ ...rangeFilter, event: 'vsi_game_over' }),
+
+      // gameAvgScore
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_over', score: { $exists: true } } },
+          { $group: { _id: null, avg: { $avg: '$score' } } },
+        ])
+        .toArray(),
+
+      // gameHighScores (top 10)
+      collection
+        .find({ event: 'vsi_game_over', score: { $exists: true } })
+        .sort({ score: -1 })
+        .limit(10)
+        .project({ _id: 0, score: 1, wave: 1, durationMs: 1, receivedAt: 1, country: 1, platform: 1 })
+        .toArray(),
+
+      // gameAvgDuration
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_over', durationMs: { $exists: true } } },
+          { $group: { _id: null, avg: { $avg: '$durationMs' } } },
+        ])
+        .toArray(),
+
+      // gameTotalPlayTimeMs
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_over', durationMs: { $exists: true } } },
+          { $group: { _id: null, total: { $sum: '$durationMs' } } },
+        ])
+        .toArray(),
+
+      // gameByCountry
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_start', country: { $exists: true, $ne: null } } },
+          { $group: { _id: '$country', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 20 },
+        ])
+        .toArray(),
+
+      // gameByTrigger
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_start', trigger: { $exists: true } } },
+          { $group: { _id: '$trigger', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // gameDailyActivity
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: { $in: ['vsi_game_start', 'vsi_game_over'] } } },
+          {
+            $group: {
+              _id: { $dateToString: { format: '%Y-%m-%d', date: '$receivedAt' } },
+              starts: { $sum: { $cond: [{ $eq: ['$event', 'vsi_game_start'] }, 1, 0] } },
+              ends: { $sum: { $cond: [{ $eq: ['$event', 'vsi_game_over'] }, 1, 0] } },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ])
+        .toArray(),
+
+      // gameScoreDistribution
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_over', score: { $exists: true } } },
+          {
+            $bucket: {
+              groupBy: '$score',
+              boundaries: [0, 500, 1000, 2000, 5000, Infinity],
+              default: 'other',
+              output: { count: { $sum: 1 } },
+            },
+          },
+        ])
+        .toArray(),
+
+      // gameWaveDistribution
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'vsi_game_over', wave: { $exists: true } } },
+          { $group: { _id: '$wave', count: { $sum: 1 } } },
+          { $sort: { _id: 1 } },
+        ])
+        .toArray(),
     ]);
 
     return NextResponse.json({
@@ -347,6 +457,22 @@ export async function GET(request: NextRequest) {
         count: e.count,
       })),
       recentChatQueries,
+      game: {
+        sessionCount: gameSessionCount,
+        gameOverCount,
+        avgScore: Math.round((gameAvgScore as any[])[0]?.avg || 0),
+        highScores: gameHighScores,
+        avgDurationMs: Math.round((gameAvgDuration as any[])[0]?.avg || 0),
+        totalPlayTimeMs: (gameTotalPlayTimeMs as any[])[0]?.total || 0,
+        byCountry: (gameByCountry as any[]).map((e: any) => ({ country: e._id, count: e.count })),
+        byTrigger: (gameByTrigger as any[]).map((e: any) => ({ trigger: e._id, count: e.count })),
+        dailyActivity: (gameDailyActivity as any[]).map((e: any) => ({ date: e._id, starts: e.starts, ends: e.ends })),
+        scoreDistribution: (gameScoreDistribution as any[]).map((e: any) => {
+          const labels: Record<string, string> = { '0': '0-500', '500': '500-1K', '1000': '1K-2K', '2000': '2K-5K', '5000': '5K+' };
+          return { bucket: labels[String(e._id)] || String(e._id), count: e.count };
+        }),
+        waveDistribution: (gameWaveDistribution as any[]).map((e: any) => ({ wave: e._id, count: e.count })),
+      },
     });
   } catch (error) {
     console.error('Stats error:', error);

@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     openGraph: {
       title: useCase.headline,
       description: useCase.subheadline,
-      url: `https://vai.mlynn.org/use-cases/${useCase.slug}`,
+      url: `https://vaicli.com/use-cases/${useCase.slug}`,
       siteName: 'Vai',
       type: 'article',
     },
@@ -66,7 +66,7 @@ export default async function UseCasePage({ params }: PageProps) {
     tool: {
       '@type': 'SoftwareApplication',
       name: 'Vai (VoyageAI-CLI)',
-      url: 'https://vai.mlynn.org',
+      url: 'https://vaicli.com',
     },
   };
 

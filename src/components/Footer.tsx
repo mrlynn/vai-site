@@ -11,7 +11,7 @@ const productLinks = [
   { label: 'GitHub', href: 'https://github.com/mrlynn/voyageai-cli' },
   { label: 'npm', href: 'https://www.npmjs.com/package/voyageai-cli' },
   { label: 'Releases', href: 'https://github.com/mrlynn/voyageai-cli/releases' },
-  { label: 'Documentation', href: 'https://github.com/mrlynn/voyageai-cli#readme' },
+  { label: 'Documentation', href: 'https://docs.vaicli.com' },
 ];
 
 const resourceLinks = [

@@ -72,7 +72,7 @@ vai config set mongodb-uri YOUR_MONGODB_URI`,
       title: 'Download the sample documents',
       description:
         'Grab the 16-file sample documentation set. These are synthetic but realistic engineering docs covering architecture, APIs, runbooks, and ADRs.',
-      command: `curl -L https://vai.mlynn.org/use-cases/devdocs/sample-docs/sample-docs.zip -o sample-docs.zip
+      command: `curl -L https://vaicli.com/use-cases/devdocs/sample-docs/sample-docs.zip -o sample-docs.zip
 unzip sample-docs.zip -d ./sample-docs`,
       expectedOutput: `Archive:  sample-docs.zip
   inflating: ./sample-docs/architecture-overview.md

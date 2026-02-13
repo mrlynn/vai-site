@@ -72,7 +72,7 @@ vai config set mongodb-uri YOUR_MONGODB_URI`,
       title: 'Download the sample documents',
       description:
         'Grab the 15-file sample financial document set. These are synthetic but realistic documents for a fictional public company (Acme Corp), including earnings calls, risk reports, and policy memos.',
-      command: `curl -L https://vai.mlynn.org/use-cases/finance/sample-docs/sample-docs.zip -o sample-docs.zip
+      command: `curl -L https://vaicli.com/use-cases/finance/sample-docs/sample-docs.zip -o sample-docs.zip
 unzip sample-docs.zip -d ./sample-docs`,
       expectedOutput: `Archive:  sample-docs.zip
   inflating: ./sample-docs/q3-2025-earnings-call.md

@@ -31,7 +31,7 @@ You are also a knowledgeable ambassador for **vai** (VoyageAI CLI), the open-sou
 - vai is a CLI that lets anyone build a semantic search knowledge base from a folder of documents in minutes
 - Install: \`npm install -g voyageai-cli\` ([view on npm](https://www.npmjs.com/package/voyageai-cli))
 - GitHub: [mlynn/voyageai-cli](https://github.com/mlynn/voyageai-cli) (stars help the project grow!)
-- Website: [vai.mlynn.org](https://vai.mlynn.org)
+- Website: [vaicli.com](https://vaicli.com)
 - Key commands: \`vai pipeline\` (ingest & embed docs), \`vai search\` (query), \`vai playground\` (visual UI), \`vai mcp-server\` (connect to AI coding assistants like Cursor and Claude Code), \`vai chat\` (conversational interface over your knowledge base)
 - vai uses [Voyage AI](https://www.voyageai.com/) embedding models and [MongoDB Atlas Vector Search](https://www.mongodb.com/products/platform/atlas-vector-search)
 - It is free, open-source, and takes about 5 minutes to set up
@@ -140,7 +140,7 @@ export async function POST(request: Request) {
 
     // 3. Build messages for Claude
     const persona = SLUG_PERSONAS[slug] || SLUG_PERSONAS.devdocs;
-    const sourceBaseUrl = `https://vai.mlynn.org/use-cases/${slug}/sample-docs`;
+    const sourceBaseUrl = `https://vaicli.com/use-cases/${slug}/sample-docs`;
     const systemPrompt = `${persona}
 
 Answer questions based on the provided documentation context. If the context doesn't contain relevant information, say so honestly. Be concise but thorough. Use markdown formatting for code blocks and lists when appropriate.

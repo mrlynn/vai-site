@@ -39,6 +39,7 @@ import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
 import SpeedIcon from '@mui/icons-material/Speed';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import { BarChart, LineChart } from '@mui/x-charts';
 import dynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
@@ -81,6 +82,19 @@ interface Stats {
   useCaseDailyChat: { date: string; count: number }[];
   useCaseAvgLatency: { slug: string; avgLatency: number; count: number }[];
   recentChatQueries: Record<string, unknown>[];
+  game: {
+    sessionCount: number;
+    gameOverCount: number;
+    avgScore: number;
+    highScores: { score: number; wave: number; durationMs: number; receivedAt: string; country?: string; platform?: string }[];
+    avgDurationMs: number;
+    totalPlayTimeMs: number;
+    byCountry: { country: string; count: number }[];
+    byTrigger: { trigger: string; count: number }[];
+    dailyActivity: { date: string; starts: number; ends: number }[];
+    scoreDistribution: { bucket: string; count: number }[];
+    waveDistribution: { wave: number; count: number }[];
+  };
 }
 
 function StatCard({
@@ -210,7 +224,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<string>('30');
-  const [activeTab, setActiveTab] = useState<'overview' | 'usecases'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'usecases' | 'game'>('overview');
 
   // Persist API key in sessionStorage
   useEffect(() => {
@@ -429,6 +443,7 @@ export default function Dashboard() {
           >
             <ToggleButton value="overview">Overview</ToggleButton>
             <ToggleButton value="usecases">Use Cases</ToggleButton>
+            <ToggleButton value="game">🎮 Game</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -993,6 +1008,193 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             )}
+          </>
+        )}
+        {stats && activeTab === 'game' && (
+          <>
+            {/* Game Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Sessions"
+                  value={stats.game?.sessionCount || 0}
+                  icon={<SportsEsportsIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Avg Score"
+                  value={stats.game?.avgScore || 0}
+                  icon={<TrendingUpIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Play Time"
+                  value={
+                    stats.game?.totalPlayTimeMs
+                      ? `${Math.round(stats.game.totalPlayTimeMs / 60000)}m`
+                      : '0m'
+                  }
+                  icon={<TimelineIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="High Score"
+                  value={stats.game?.highScores?.[0]?.score || 0}
+                  icon={<BarChartIcon sx={{ color: palette.accent }} />}
+                  subtitle={
+                    stats.game?.highScores?.[0]
+                      ? `Wave ${stats.game.highScores[0].wave}`
+                      : undefined
+                  }
+                />
+              </Grid>
+            </Grid>
+
+            {/* High Scores Leaderboard */}
+            {stats.game?.highScores?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <SportsEsportsIcon sx={{ color: palette.accent, fontSize: 20 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      High Scores Leaderboard
+                    </Typography>
+                  </Box>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          {['#', 'Score', 'Wave', 'Duration', 'Country', 'Platform', 'Date'].map((h) => (
+                            <TableCell key={h} sx={{ color: palette.textMuted, borderColor: palette.border, fontWeight: 600 }}>
+                              {h}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {stats.game.highScores.map((hs, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell sx={{ borderColor: palette.border, fontWeight: 700, color: i < 3 ? palette.accent : palette.text }}>
+                              {i + 1}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontWeight: 700, fontFamily: 'monospace' }}>
+                              {hs.score.toLocaleString()}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border }}>{hs.wave}</TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                              {hs.durationMs ? `${Math.round(hs.durationMs / 1000)}s` : '—'}
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border }}>{hs.country || '—'}</TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontSize: '0.8rem' }}>{hs.platform || '—'}</TableCell>
+                            <TableCell sx={{ borderColor: palette.border, fontSize: '0.8rem', color: palette.textDim }}>
+                              {hs.receivedAt ? new Date(hs.receivedAt).toLocaleDateString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Score Distribution */}
+            {stats.game?.scoreDistribution?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <BarChartIcon sx={{ color: palette.purple }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Score Distribution</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.game.scoreDistribution.map((d) => d.bucket),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.game.scoreDistribution.map((d) => d.count), color: palette.purple }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Wave Distribution */}
+            {stats.game?.waveDistribution?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <BarChartIcon sx={{ color: palette.blue }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Wave Distribution</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.game.waveDistribution.map((d) => `Wave ${d.wave}`),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.game.waveDistribution.map((d) => d.count), color: palette.blue }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Daily Game Activity */}
+            {stats.game?.dailyActivity?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TimelineIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Daily Game Activity</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <LineChart
+                    xAxis={[{
+                      data: stats.game.dailyActivity.map((d) => new Date(d.date)),
+                      scaleType: 'time',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[
+                      { data: stats.game.dailyActivity.map((d) => d.starts), color: palette.accent, label: 'Starts', showMark: false },
+                      { data: stats.game.dailyActivity.map((d) => d.ends), color: palette.purple, label: 'Game Overs', showMark: false },
+                    ]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Game by Country & Trigger */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {stats.game?.byCountry?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DataTable
+                    title="Game by Country"
+                    icon={<PublicIcon sx={{ color: palette.blue, fontSize: 20 }} />}
+                    rows={stats.game.byCountry}
+                    labelKey="country"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
+              {stats.game?.byTrigger?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DataTable
+                    title="Trigger Method"
+                    icon={<TouchAppIcon sx={{ color: palette.purple, fontSize: 20 }} />}
+                    rows={stats.game.byTrigger}
+                    labelKey="trigger"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
+            </Grid>
           </>
         )}
       </Container>
