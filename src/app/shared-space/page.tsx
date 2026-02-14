@@ -91,11 +91,11 @@ interface ApiResponse {
   insight: Insight;
 }
 
-function sendTelemetry(event: string) {
+function sendTelemetry(event: string, extra: Record<string, unknown> = {}) {
   fetch('/api/telemetry', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event, version: 'web', context: 'shared-space' }),
+    body: JSON.stringify({ event, version: 'web', context: 'shared-space', ...extra }),
   }).catch(() => {});
 }
 
@@ -133,7 +133,12 @@ export default function SharedSpacePage() {
       }
       const data: ApiResponse = await res.json();
       setResult(data);
-      sendTelemetry('shared_space_explore');
+      sendTelemetry('shared_space_explore', {
+        preset: preset || 'custom',
+        docLength: documentText.length,
+        queryLength: queryText.length,
+        crossModelSimilarity: data.insight.crossModelSimilarity,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
     } finally {
@@ -142,7 +147,7 @@ export default function SharedSpacePage() {
   };
 
   const handleShare = () => {
-    sendTelemetry('shared_space_share');
+    sendTelemetry('shared_space_share', { platform: 'linkedin' });
     const text = result
       ? `I just explored Voyage AI's shared embedding space! Cross-model similarity: ${result.insight.crossModelSimilarity.toFixed(2)} — asymmetric retrieval saves ${result.insight.savingsPercent}% on query costs. Try it yourself:`
       : 'Check out the Voyage AI Shared Space Explorer — visualize how embedding models share the same vector space!';
