@@ -22,6 +22,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import StarIcon from '@mui/icons-material/Star';
 import { palette } from '@/theme/theme';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 
 const navItems = [
   { label: 'Why Voyage AI', href: '#why-voyage' },
@@ -40,6 +41,8 @@ export default function Navbar() {
   const isMobile = useMediaQuery('(max-width:1024px)');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [stars, setStars] = useState<number | null>(null);
+  const pathname = usePathname();
+  const isHome = pathname === '/';
 
   useEffect(() => {
     fetch('/api/stats')
@@ -63,7 +66,7 @@ export default function Navbar() {
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
             <Box
               component="a"
-              href="#"
+              href="/"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -94,10 +97,12 @@ export default function Navbar() {
 
             {!isMobile && (
               <Box sx={{ display: 'flex', gap: 0.25, flexGrow: 1 }}>
-                {navItems.map((item) => (
+                {navItems.map((item) => {
+                  const href = !isHome && item.href.startsWith('#') ? `/${item.href}` : item.href;
+                  return (
                   <Button
                     key={item.label}
-                    href={item.href}
+                    href={href}
                     target={item.external ? '_blank' : undefined}
                     rel={item.external ? 'noopener noreferrer' : undefined}
                     sx={{
@@ -113,7 +118,8 @@ export default function Navbar() {
                   >
                     {item.label}
                   </Button>
-                ))}
+                  );
+                })}
               </Box>
             )}
 
@@ -165,7 +171,7 @@ export default function Navbar() {
               <Button
                 variant="contained"
                 size="small"
-                href="#cli-demo"
+                href={isHome ? '#cli-demo' : '/#cli-demo'}
                 sx={{
                   ml: 1.5,
                   bgcolor: palette.accent,
@@ -200,23 +206,26 @@ export default function Navbar() {
         }}
       >
         <List sx={{ pt: 4 }}>
-          {navItems.map((item) => (
+          {navItems.map((item) => {
+            const href = !isHome && item.href.startsWith('#') ? `/${item.href}` : item.href;
+            return (
             <ListItem key={item.label} disablePadding>
               <ListItemButton
                 component="a"
-                href={item.href}
+                href={href}
                 target={item.external ? '_blank' : undefined}
                 onClick={() => setDrawerOpen(false)}
               >
                 <ListItemText primary={item.label} sx={{ color: palette.text }} />
               </ListItemButton>
             </ListItem>
-          ))}
+            );
+          })}
           <ListItem disablePadding sx={{ mt: 2, px: 2 }}>
             <Button
               variant="contained"
               fullWidth
-              href="#cli-demo"
+              href={isHome ? '#cli-demo' : '/#cli-demo'}
               onClick={() => setDrawerOpen(false)}
               sx={{
                 bgcolor: palette.accent,
