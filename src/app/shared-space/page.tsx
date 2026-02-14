@@ -160,7 +160,7 @@ export default function SharedSpacePage() {
       : '';
     const url = `https://vaicli.com/shared-space${params}`;
     const text = result
-      ? `🔬 Just tested Voyage AI's shared embedding space.\n\nI embedded the same text with three different models (voyage-4-large, voyage-4, voyage-4-lite).\n\nCross-model similarity: ${result.modelAgreement.avgSimilarity.toFixed(2)} — they produce nearly identical vectors despite completely different architectures.\n\nEmbed documents ONCE with the best model. Query with the cheapest.\n\nSame results. ${result.retrieval.costSavingsPercent}% less cost.\n\nTry it yourself →`
+      ? `Curious about Voyage AI's shared embedding space and what that can mean for your costs? 🔬 Just tested Voyage AI's shared embedding space.\n\nI embedded the same text with three different models (voyage-4-large, voyage-4, voyage-4-lite).\n\nCross-model similarity: ${result.modelAgreement.avgSimilarity.toFixed(2)} — they produce nearly identical vectors despite completely different architectures.\n\nEmbed documents ONCE with the best model. Query with the cheapest.\n\nSame results. ${result.retrieval.costSavingsPercent}% less cost.\n\nTry it yourself →`
       : 'Visualize how Voyage AI embedding models share the same vector space — and why that saves you 83% on query costs.';
     window.open(
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
