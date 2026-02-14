@@ -165,9 +165,14 @@ export default function SharedSpacePage() {
         <Typography variant="h3" sx={{ color: palette.text, fontWeight: 700, mb: 1 }}>
           Shared Space Explorer
         </Typography>
-        <Typography variant="h6" sx={{ color: palette.textDim, mb: 4, fontWeight: 400 }}>
+        <Typography variant="h6" sx={{ color: palette.textDim, mb: 1, fontWeight: 400 }}>
           Embed text with 3 Voyage AI models simultaneously and see that vectors land in the same
           semantic neighborhood.
+        </Typography>
+        <Typography sx={{ color: palette.textMuted, mb: 4, fontSize: '0.9rem', maxWidth: 800 }}>
+          Voyage AI&apos;s models share a unified embedding space — vectors from different models are directly comparable.
+          This means you can embed documents with a high-accuracy model and queries with a cheaper one, and retrieval still works.
+          Enter a document and a query below (or pick a preset) to see this in action.
         </Typography>
 
         {/* Input Panel */}
@@ -266,8 +271,14 @@ export default function SharedSpacePage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
                       Vector Neighborhood
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
+                      Each dot is a vector projected from high-dimensional space onto 2D via PCA.
+                      Documents (green) and queries (blue) from all 3 models should cluster together
+                      if they&apos;re semantically related — the grey &quot;control&quot; dot is an unrelated sentence
+                      that should sit far away. Tight clusters = strong shared space.
                     </Typography>
                     <ScatterChart
                       height={320}
@@ -309,8 +320,14 @@ export default function SharedSpacePage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
                       Similarity Matrix
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
+                      Cosine similarity between every pair of vectors (1.0 = identical, 0 = unrelated).
+                      The highlighted cell shows the cross-model match that matters most: a document
+                      embedded with voyage-4-large vs. a query embedded with voyage-4-lite. High values
+                      here prove asymmetric retrieval works.
                     </Typography>
                     <SimilarityMatrix
                       projection={result.projection}
@@ -324,8 +341,13 @@ export default function SharedSpacePage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
                       Cost Comparison (per 1M tokens)
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
+                      Voyage AI offers three model tiers at different price points. Since they share
+                      the same vector space, you can mix and match — use the most powerful model where
+                      accuracy matters (indexing documents) and the cheapest for high-volume operations (queries).
                     </Typography>
                     <BarChart
                       height={280}
@@ -373,8 +395,13 @@ export default function SharedSpacePage() {
               <Grid size={{ xs: 12, md: 6 }}>
                 <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
                   <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 2 }}>
+                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
                       Insight
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
+                      The key number: <strong>quality retained</strong> shows how much retrieval accuracy
+                      you keep when using the cheap model for queries instead of the expensive one.
+                      Values above 95% mean the asymmetric strategy is a no-brainer.
                     </Typography>
                     <Typography
                       sx={{ color: palette.accent, fontSize: '2rem', fontWeight: 700, mb: 1 }}
