@@ -4,11 +4,16 @@ import { NextRequest } from 'next/server';
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
+  const { searchParams, origin } = request.nextUrl;
   const avg = searchParams.get('avg') || '0.938';
   const min = searchParams.get('min') || '0.912';
   const savings = searchParams.get('savings') || '83';
   const preset = searchParams.get('preset') || '';
+
+  // Fetch logo as ArrayBuffer for Satori img src
+  const logoUrl = `${origin}/V.png`;
+  const logoData = await fetch(logoUrl).then((r) => r.arrayBuffer());
+  const logoBase64 = `data:image/png;base64,${Buffer.from(logoData).toString('base64')}`;
 
   return new ImageResponse(
     (
@@ -24,10 +29,12 @@ export async function GET(request: NextRequest) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoBase64} width="56" height="56" style={{ borderRadius: '8px' }} alt="" />
           <div
             style={{
               display: 'flex',
-              fontSize: '36px',
+              fontSize: '32px',
               fontWeight: 800,
               color: '#00D4AA',
               letterSpacing: '-0.03em',
