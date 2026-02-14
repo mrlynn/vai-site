@@ -27,6 +27,11 @@ const PRESETS = [
     textB: 'The company reported Q3 revenue of $4.2B, representing a 23% year-over-year increase. Operating margins expanded to 34.5%, driven by cloud services growth. Free cash flow reached $1.8B, enabling the board to authorize an additional $5B share repurchase program.',
   },
   {
+    label: 'Retrieval Demo',
+    textA: 'Kubernetes pod scheduling uses affinity and anti-affinity rules to place workloads on appropriate nodes. Node affinity attracts pods to nodes with specific labels, while pod anti-affinity spreads replicas across failure domains for high availability. Taints and tolerations provide another mechanism to repel pods from unsuitable nodes.',
+    textB: 'How does Kubernetes decide which node to schedule a pod on?',
+  },
+  {
     label: 'Same Domain',
     textA: 'Kubernetes pod scheduling uses affinity rules to place workloads on appropriate nodes. Node affinity attracts pods to specific nodes while anti-affinity spreads pods across failure domains for high availability.',
     textB: 'PostgreSQL uses a multi-version concurrency control system for transaction isolation. Each transaction sees a snapshot of data as it was at a particular point in time, preventing dirty reads and ensuring consistent query results.',
@@ -309,6 +314,10 @@ export default function SharedSpacePage() {
                       <Typography sx={{ color: palette.accent, fontSize: '1.1rem', fontWeight: 600 }}>
                         ✅ All models agree. The space is shared.
                       </Typography>
+                      <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem', mt: 1 }}>
+                        Min pair: {result.modelAgreement.minSimilarity.toFixed(3)} — even the
+                        weakest agreement is above 0.90
+                      </Typography>
                     </Box>
                   </Grid>
                 </Grid>
@@ -410,21 +419,37 @@ export default function SharedSpacePage() {
                         Retrieval Test
                       </Typography>
 
-                      <Box sx={{ mb: 2 }}>
-                        <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem' }}>
-                          Doc: v4-large → Query: v4-large
+                      <Box
+                        sx={{
+                          mb: 1.5,
+                          p: 2,
+                          borderRadius: 1,
+                          bgcolor: palette.bgCard,
+                          border: `1px solid ${palette.border}`,
+                        }}
+                      >
+                        <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 0.5 }}>
+                          Doc: v4-large → Query: v4-large (baseline)
                         </Typography>
-                        <Typography sx={{ color: palette.text, fontSize: '1.1rem', fontWeight: 600 }}>
-                          Similarity: {result.retrieval.similarityExpensive.toFixed(4)}
+                        <Typography sx={{ color: palette.text, fontSize: '1.3rem', fontWeight: 700 }}>
+                          {result.retrieval.similarityExpensive.toFixed(4)}
                         </Typography>
                       </Box>
 
-                      <Box sx={{ mb: 2 }}>
-                        <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem' }}>
-                          Doc: v4-large → Query: v4-lite
+                      <Box
+                        sx={{
+                          mb: 2,
+                          p: 2,
+                          borderRadius: 1,
+                          bgcolor: palette.bgCard,
+                          border: `1px solid ${palette.accent}`,
+                        }}
+                      >
+                        <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 0.5 }}>
+                          Doc: v4-large → Query: v4-lite (asymmetric)
                         </Typography>
-                        <Typography sx={{ color: palette.text, fontSize: '1.1rem', fontWeight: 600 }}>
-                          Similarity: {result.retrieval.similarityCheap.toFixed(4)}
+                        <Typography sx={{ color: palette.accent, fontSize: '1.3rem', fontWeight: 700 }}>
+                          {result.retrieval.similarityCheap.toFixed(4)}
                         </Typography>
                       </Box>
 
@@ -434,19 +459,14 @@ export default function SharedSpacePage() {
                           borderRadius: 1,
                           bgcolor: 'rgba(0, 237, 100, 0.08)',
                           border: `1px solid ${palette.accent}`,
-                          textAlign: 'center',
                         }}
                       >
-                        <Typography sx={{ color: palette.textDim, fontSize: '0.85rem' }}>
-                          Quality retained
+                        <Typography sx={{ color: palette.accent, fontSize: '0.95rem', fontWeight: 600 }}>
+                          ✅ v4-lite retrieval is comparable to v4-large
                         </Typography>
-                        <Typography
-                          sx={{ color: palette.accent, fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.2 }}
-                        >
-                          {result.retrieval.qualityRetained.toFixed(1)}%
-                        </Typography>
-                        <Typography sx={{ color: palette.accent, fontSize: '0.9rem' }}>
-                          ✅ Nearly identical retrieval quality
+                        <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem', mt: 0.5 }}>
+                          Both scores are in the same range — switching to lite doesn&apos;t degrade
+                          retrieval, and it costs {result.retrieval.costSavingsPercent}% less.
                         </Typography>
                       </Box>
                     </Box>
