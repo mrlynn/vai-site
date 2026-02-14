@@ -3,6 +3,7 @@ import Hero from '@/components/Hero';
 import WhyVoyageAI from '@/components/WhyVoyageAI';
 import Features from '@/components/Features';
 import Models from '@/components/Models';
+import SharedSpaceCTA from '@/components/SharedSpaceCTA';
 import CliDemo from '@/components/CliDemo';
 import McpServer from '@/components/McpServer';
 import UseCases from '@/components/UseCases';
@@ -18,6 +19,7 @@ export default function Home() {
       <WhyVoyageAI />
       <Features />
       <Models />
+      <SharedSpaceCTA />
       <CliDemo />
       <McpServer />
       <UseCases />
