@@ -29,6 +29,7 @@ const navItems = [
   { label: 'Models', href: '#models' },
   { label: 'Workflows', href: '/workflows' },
   { label: 'Use Cases', href: '/use-cases' },
+  { label: 'Shared Space', href: '/shared-space' },
   { label: 'CLI', href: '#cli-demo' },
   { label: 'MCP', href: '#mcp' },
   { label: 'Docs', href: 'https://docs.vaicli.com', external: true },
