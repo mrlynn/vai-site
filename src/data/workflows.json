@@ -1,0 +1,1270 @@
+[
+  {
+    "name": "@vaicli/vai-workflow-asymmetric-search",
+    "slug": "asymmetric-search",
+    "description": "Demonstrate asymmetric retrieval: documents embedded with voyage-4-large, queries embedded with voyage-4-lite. Same embedding space, ~83% query cost reduction.",
+    "version": "1.0.0",
+    "category": "retrieval",
+    "tags": [
+      "asymmetric",
+      "shared-space",
+      "cost-savings",
+      "voyage-4"
+    ],
+    "tools": [
+      "embed",
+      "search",
+      "rerank"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 3,
+    "layersCount": 2,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "embed_query",
+        "tool": "embed",
+        "name": "Embed query with voyage-4-lite (low cost)"
+      },
+      {
+        "id": "vector_search",
+        "tool": "search",
+        "name": "Search collection (docs embedded with voyage-4-large)"
+      },
+      {
+        "id": "rerank_results",
+        "tool": "rerank",
+        "name": "Rerank for final relevance ordering"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-batch-quality-gate",
+    "slug": "batch-quality-gate",
+    "description": "Evaluate incoming documents against exemplar documents from the collection and only ingest those that meet a quality/relevance threshold.",
+    "version": "1.0.0",
+    "category": "ingestion",
+    "tags": [
+      "quality",
+      "gate",
+      "validation"
+    ],
+    "tools": [
+      "search",
+      "similarity",
+      "ingest",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 3,
+    "inputs": {
+      "document": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "exemplar_query": {
+        "type": "string",
+        "default": "high quality relevant content"
+      },
+      "quality_threshold": {
+        "type": "number",
+        "default": 0.6
+      }
+    },
+    "steps": [
+      {
+        "id": "get_exemplars",
+        "tool": "search",
+        "name": "Retrieve exemplar documents from collection"
+      },
+      {
+        "id": "score_quality",
+        "tool": "similarity",
+        "name": "Score incoming document against exemplars"
+      },
+      {
+        "id": "ingest_if_quality",
+        "tool": "ingest",
+        "name": "Ingest document if quality meets threshold"
+      },
+      {
+        "id": "rejection_report",
+        "tool": "generate",
+        "name": "Generate rejection explanation"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-clinical-protocol-match",
+    "slug": "clinical-protocol-match",
+    "description": "Match clinical presentations to relevant protocols and guidelines with structured recommendations and evidence citations.",
+    "version": "1.0.0",
+    "category": "domain-specific",
+    "tags": [
+      "clinical",
+      "healthcare",
+      "protocols",
+      "medical"
+    ],
+    "tools": [
+      "query",
+      "rerank",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 3,
+    "layersCount": 3,
+    "inputs": {
+      "presentation": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "specialty": {
+        "type": "string",
+        "default": "general"
+      },
+      "limit": {
+        "type": "number",
+        "default": 5
+      }
+    },
+    "steps": [
+      {
+        "id": "protocol_search",
+        "tool": "query",
+        "name": "Search clinical knowledge base"
+      },
+      {
+        "id": "rerank_clinical",
+        "tool": "rerank",
+        "name": "Rerank by clinical relevance"
+      },
+      {
+        "id": "protocol_summary",
+        "tool": "generate",
+        "name": "Generate structured protocol recommendations"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-code-migration-helper",
+    "slug": "code-migration-helper",
+    "description": "Find similar code patterns across repositories and generate migration suggestions using code-domain embeddings.",
+    "version": "1.0.0",
+    "category": "domain-specific",
+    "tags": [
+      "code",
+      "migration",
+      "refactoring",
+      "voyage-code-3"
+    ],
+    "tools": [
+      "query",
+      "rerank",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 3,
+    "layersCount": 3,
+    "inputs": {
+      "code_snippet": {
+        "type": "string",
+        "required": true
+      },
+      "target_framework": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 5
+      }
+    },
+    "steps": [
+      {
+        "id": "find_patterns",
+        "tool": "query",
+        "name": "Search for similar code patterns"
+      },
+      {
+        "id": "rerank_code",
+        "tool": "rerank",
+        "name": "Rerank by code pattern relevance"
+      },
+      {
+        "id": "migration_guide",
+        "tool": "generate",
+        "name": "Generate migration suggestions"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-collection-overlap-audit",
+    "slug": "collection-overlap-audit",
+    "description": "Compare two collections to find semantic duplicates. Samples documents from the source collection and searches for near-matches in the target.",
+    "version": "1.0.0",
+    "category": "analysis",
+    "tags": [
+      "dedup",
+      "overlap",
+      "audit",
+      "multi-collection"
+    ],
+    "tools": [
+      "search",
+      "filter",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 4,
+    "inputs": {
+      "source_collection": {
+        "type": "string",
+        "required": true
+      },
+      "target_collection": {
+        "type": "string",
+        "required": true
+      },
+      "sample_query": {
+        "type": "string",
+        "default": "general content"
+      },
+      "sample_size": {
+        "type": "number",
+        "default": 10
+      },
+      "similarity_threshold": {
+        "type": "number",
+        "default": 0.85
+      }
+    },
+    "steps": [
+      {
+        "id": "sample_source",
+        "tool": "search",
+        "name": "Sample documents from source collection"
+      },
+      {
+        "id": "cross_search",
+        "tool": "search",
+        "name": "Search target collection for each source document"
+      },
+      {
+        "id": "filter_duplicates",
+        "tool": "filter",
+        "name": "Filter results above similarity threshold"
+      },
+      {
+        "id": "overlap_report",
+        "tool": "generate",
+        "name": "Generate overlap analysis report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-contract-clause-finder",
+    "slug": "contract-clause-finder",
+    "description": "Search a legal document collection for specific clause types, rerank with legal-domain understanding, and extract structured clause summaries.",
+    "version": "1.0.0",
+    "category": "domain-specific",
+    "tags": [
+      "legal",
+      "contracts",
+      "clause-extraction",
+      "voyage-law-2"
+    ],
+    "tools": [
+      "query",
+      "rerank",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 3,
+    "layersCount": 3,
+    "inputs": {
+      "clause_type": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "jurisdiction": {
+        "type": "string",
+        "default": "US"
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "search_clauses",
+        "tool": "query",
+        "name": "Search for clause type in legal collection"
+      },
+      {
+        "id": "rerank_legal",
+        "tool": "rerank",
+        "name": "Rerank with legal relevance"
+      },
+      {
+        "id": "extract_summary",
+        "tool": "generate",
+        "name": "Extract and summarize clause language"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-cost-optimizer",
+    "slug": "cost-optimizer",
+    "description": "Quantify the cost savings of asymmetric retrieval (embed with voyage-4-large, query with voyage-4-lite) for your specific data by comparing result quality and calculating actual savings.",
+    "version": "1.0.0",
+    "category": "utility",
+    "tags": [
+      "cost",
+      "optimization",
+      "asymmetric",
+      "shared-space"
+    ],
+    "tools": [
+      "query",
+      "estimate",
+      "similarity",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 6,
+    "layersCount": 3,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "search_large",
+        "tool": "query",
+        "name": "Baseline: query with voyage-4-large"
+      },
+      {
+        "id": "search_lite",
+        "tool": "query",
+        "name": "Optimized: query with voyage-4-lite"
+      },
+      {
+        "id": "cost_large",
+        "tool": "estimate",
+        "name": "Estimate cost for voyage-4-large queries"
+      },
+      {
+        "id": "cost_lite",
+        "tool": "estimate",
+        "name": "Estimate cost for voyage-4-lite queries"
+      },
+      {
+        "id": "compare_quality",
+        "tool": "similarity",
+        "name": "Compare result sets between models"
+      },
+      {
+        "id": "optimization_report",
+        "tool": "generate",
+        "name": "Generate cost optimization report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-doc-freshness",
+    "slug": "doc-freshness",
+    "description": "Audit a knowledge base for stale documents. Gathers collection metadata, model information, sample documents, and cost estimates, then generates a freshness report with recommendations.",
+    "version": "1.0.0",
+    "category": "utility",
+    "tags": [
+      "freshness",
+      "maintenance",
+      "stale-documents",
+      "monitoring"
+    ],
+    "tools": [
+      "collections",
+      "models",
+      "explain",
+      "search",
+      "estimate",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 6,
+    "layersCount": 2,
+    "inputs": {
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "sample_query": {
+        "type": "string",
+        "default": "overview introduction getting started"
+      },
+      "staleness_days": {
+        "type": "number",
+        "default": 90
+      }
+    },
+    "steps": [
+      {
+        "id": "collection_stats",
+        "tool": "collections",
+        "name": "Get collection metadata and document count"
+      },
+      {
+        "id": "model_info",
+        "tool": "models",
+        "name": "Get current model capabilities and benchmarks"
+      },
+      {
+        "id": "embedding_context",
+        "tool": "explain",
+        "name": "Retrieve educational context about embedding freshness"
+      },
+      {
+        "id": "sample_docs",
+        "tool": "search",
+        "name": "Sample documents to inspect freshness metadata"
+      },
+      {
+        "id": "reembed_cost",
+        "tool": "estimate",
+        "name": "Estimate cost to re-embed the collection"
+      },
+      {
+        "id": "freshness_report",
+        "tool": "generate",
+        "name": "Generate freshness audit report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-embedding-drift-detector",
+    "slug": "embedding-drift-detector",
+    "description": "Re-embed a sample of documents and compare against stored embeddings to detect drift from model changes or configuration issues.",
+    "version": "1.0.0",
+    "category": "analysis",
+    "tags": [
+      "drift",
+      "monitoring",
+      "maintenance",
+      "quality"
+    ],
+    "tools": [
+      "search",
+      "embed",
+      "similarity",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 4,
+    "inputs": {
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "sample_query": {
+        "type": "string",
+        "default": "general knowledge"
+      },
+      "model": {
+        "type": "string",
+        "default": "voyage-4-large"
+      },
+      "sample_size": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "sample_docs",
+        "tool": "search",
+        "name": "Sample documents from collection"
+      },
+      {
+        "id": "re_embed",
+        "tool": "embed",
+        "name": "Generate fresh embeddings for sampled documents"
+      },
+      {
+        "id": "compare",
+        "tool": "similarity",
+        "name": "Compare stored vs fresh embeddings"
+      },
+      {
+        "id": "report",
+        "tool": "generate",
+        "name": "Generate drift analysis report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-financial-risk-scanner",
+    "slug": "financial-risk-scanner",
+    "description": "Scan financial document collections for risk indicators related to a company or topic, with domain-specific retrieval and risk assessment.",
+    "version": "1.0.0",
+    "category": "domain-specific",
+    "tags": [
+      "finance",
+      "risk",
+      "analysis",
+      "voyage-finance-2"
+    ],
+    "tools": [
+      "query",
+      "rerank",
+      "filter",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 4,
+    "inputs": {
+      "topic": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "risk_categories": {
+        "type": "string",
+        "default": "regulatory, operational, market, credit, liquidity"
+      },
+      "limit": {
+        "type": "number",
+        "default": 15
+      }
+    },
+    "steps": [
+      {
+        "id": "risk_search",
+        "tool": "query",
+        "name": "Search for risk-related documents"
+      },
+      {
+        "id": "rerank_risk",
+        "tool": "rerank",
+        "name": "Rerank by risk relevance"
+      },
+      {
+        "id": "filter_high_relevance",
+        "tool": "filter",
+        "name": "Filter for high-relevance results only"
+      },
+      {
+        "id": "risk_report",
+        "tool": "generate",
+        "name": "Generate risk assessment report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-hybrid-precision-search",
+    "slug": "hybrid-precision-search",
+    "description": "Run three retrieval strategies in parallel (broad, precise, filtered), merge results, and rerank for optimal relevance.",
+    "version": "1.0.0",
+    "category": "retrieval",
+    "tags": [
+      "multi-strategy",
+      "parallel",
+      "reranking",
+      "hybrid"
+    ],
+    "tools": [
+      "search",
+      "query",
+      "merge",
+      "rerank"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 5,
+    "layersCount": 3,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "filter": {
+        "type": "object",
+        "default": {}
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "broad_search",
+        "tool": "search",
+        "name": "Broad retrieval with voyage-4-lite"
+      },
+      {
+        "id": "precise_search",
+        "tool": "query",
+        "name": "Precise retrieval with voyage-4-large + rerank"
+      },
+      {
+        "id": "filtered_search",
+        "tool": "search",
+        "name": "Filtered retrieval with metadata constraints"
+      },
+      {
+        "id": "merged",
+        "tool": "merge",
+        "name": "Merge and deduplicate all results"
+      },
+      {
+        "id": "final_rerank",
+        "tool": "rerank",
+        "name": "Rerank merged results for final ordering"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-incremental-sync",
+    "slug": "incremental-sync",
+    "description": "Smart incremental ingestion that compares incoming documents against the existing collection using semantic similarity, with three-tier decision logic: skip duplicates, flag revisions, ingest new content.",
+    "version": "1.0.0",
+    "category": "ingestion",
+    "tags": [
+      "sync",
+      "dedup",
+      "incremental",
+      "smart-ingest"
+    ],
+    "tools": [
+      "search",
+      "similarity",
+      "ingest",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 5,
+    "layersCount": 3,
+    "inputs": {
+      "document": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "duplicate_threshold": {
+        "type": "number",
+        "default": 0.95
+      },
+      "revision_threshold": {
+        "type": "number",
+        "default": 0.7
+      }
+    },
+    "steps": [
+      {
+        "id": "find_existing",
+        "tool": "search",
+        "name": "Search for similar existing documents"
+      },
+      {
+        "id": "check_similarity",
+        "tool": "similarity",
+        "name": "Compare incoming document against closest match"
+      },
+      {
+        "id": "ingest_new",
+        "tool": "ingest",
+        "name": "Ingest as new document"
+      },
+      {
+        "id": "flag_revision",
+        "tool": "generate",
+        "name": "Flag as revision for review"
+      },
+      {
+        "id": "skip_duplicate",
+        "tool": "generate",
+        "name": "Skip - document is a duplicate"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-index-health-check",
+    "slug": "index-health-check",
+    "description": "Run a comprehensive diagnostic on a collection: check document count, test retrieval quality, estimate costs, and generate a health report with recommendations.",
+    "version": "1.0.0",
+    "category": "utility",
+    "tags": [
+      "diagnostics",
+      "health",
+      "maintenance",
+      "monitoring"
+    ],
+    "tools": [
+      "collections",
+      "search",
+      "query",
+      "estimate",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 5,
+    "layersCount": 2,
+    "inputs": {
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "test_query": {
+        "type": "string",
+        "required": true
+      }
+    },
+    "steps": [
+      {
+        "id": "collection_info",
+        "tool": "collections",
+        "name": "Get collection metadata"
+      },
+      {
+        "id": "broad_search",
+        "tool": "search",
+        "name": "Broad retrieval test"
+      },
+      {
+        "id": "precise_query",
+        "tool": "query",
+        "name": "Full pipeline retrieval test"
+      },
+      {
+        "id": "cost_estimate",
+        "tool": "estimate",
+        "name": "Estimate query costs"
+      },
+      {
+        "id": "health_report",
+        "tool": "generate",
+        "name": "Generate health assessment"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-knowledge-base-bootstrap",
+    "slug": "knowledge-base-bootstrap",
+    "description": "One-command knowledge base setup: ingest a document, verify the collection, run a test query, and generate a status report confirming everything works.",
+    "version": "1.0.0",
+    "category": "integration",
+    "tags": [
+      "onboarding",
+      "setup",
+      "bootstrap",
+      "end-to-end"
+    ],
+    "tools": [
+      "ingest",
+      "collections",
+      "query",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 2,
+    "inputs": {
+      "document": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "test_query": {
+        "type": "string",
+        "required": true
+      }
+    },
+    "steps": [
+      {
+        "id": "ingest_doc",
+        "tool": "ingest",
+        "name": "Ingest document into collection"
+      },
+      {
+        "id": "verify_collection",
+        "tool": "collections",
+        "name": "Verify collection was created"
+      },
+      {
+        "id": "test_search",
+        "tool": "query",
+        "name": "Run test query to validate retrieval"
+      },
+      {
+        "id": "status_report",
+        "tool": "generate",
+        "name": "Generate bootstrap status report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-meeting-action-items",
+    "slug": "meeting-action-items",
+    "description": "Ingest meeting notes into the knowledge base and extract structured action items with owners, deadlines, and context from prior meetings.",
+    "version": "1.0.0",
+    "category": "domain-specific",
+    "tags": [
+      "meetings",
+      "action-items",
+      "extraction",
+      "productivity"
+    ],
+    "tools": [
+      "ingest",
+      "query",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 3,
+    "layersCount": 2,
+    "inputs": {
+      "notes": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "meeting_topic": {
+        "type": "string",
+        "required": true
+      },
+      "date": {
+        "type": "string",
+        "default": "today"
+      }
+    },
+    "steps": [
+      {
+        "id": "store_notes",
+        "tool": "ingest",
+        "name": "Ingest meeting notes into knowledge base"
+      },
+      {
+        "id": "prior_context",
+        "tool": "query",
+        "name": "Find related prior action items and decisions"
+      },
+      {
+        "id": "extract_actions",
+        "tool": "generate",
+        "name": "Extract structured action items"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-model-shootout",
+    "slug": "model-shootout",
+    "description": "Compare voyage-4-large, voyage-4, and voyage-4-lite side-by-side on your data. Shows retrieval quality differences and cost savings for each model.",
+    "version": "1.0.0",
+    "category": "utility",
+    "tags": [
+      "benchmarking",
+      "model-comparison",
+      "cost",
+      "shared-space"
+    ],
+    "tools": [
+      "query",
+      "estimate",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 7,
+    "layersCount": 2,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 5
+      }
+    },
+    "steps": [
+      {
+        "id": "search_large",
+        "tool": "query",
+        "name": "Search with voyage-4-large"
+      },
+      {
+        "id": "search_base",
+        "tool": "query",
+        "name": "Search with voyage-4"
+      },
+      {
+        "id": "search_lite",
+        "tool": "query",
+        "name": "Search with voyage-4-lite"
+      },
+      {
+        "id": "cost_large",
+        "tool": "estimate",
+        "name": "Estimate cost for voyage-4-large"
+      },
+      {
+        "id": "cost_base",
+        "tool": "estimate",
+        "name": "Estimate cost for voyage-4"
+      },
+      {
+        "id": "cost_lite",
+        "tool": "estimate",
+        "name": "Estimate cost for voyage-4-lite"
+      },
+      {
+        "id": "comparison_report",
+        "tool": "generate",
+        "name": "Generate side-by-side comparison report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-multilingual-search",
+    "slug": "multilingual-search",
+    "description": "Translate a query into multiple languages, search in parallel, and merge results for cross-lingual retrieval.",
+    "version": "1.0.0",
+    "category": "retrieval",
+    "tags": [
+      "multilingual",
+      "translation",
+      "parallel",
+      "international"
+    ],
+    "tools": [
+      "generate",
+      "query",
+      "merge",
+      "rerank"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 6,
+    "layersCount": 4,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "language1": {
+        "type": "string",
+        "default": "Spanish"
+      },
+      "language2": {
+        "type": "string",
+        "default": "French"
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "translate",
+        "tool": "generate",
+        "name": "Translate query into target languages"
+      },
+      {
+        "id": "search_original",
+        "tool": "query",
+        "name": "Search with original query"
+      },
+      {
+        "id": "search_lang1",
+        "tool": "query",
+        "name": "Search with first translation"
+      },
+      {
+        "id": "search_lang2",
+        "tool": "query",
+        "name": "Search with second translation"
+      },
+      {
+        "id": "merged",
+        "tool": "merge",
+        "name": "Merge cross-lingual results"
+      },
+      {
+        "id": "final_rerank",
+        "tool": "rerank",
+        "name": "Rerank for final relevance ordering"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-query-quality-scorer",
+    "slug": "query-quality-scorer",
+    "description": "Evaluate retrieval quality for a query by measuring semantic similarity between the query and its top results. Provides a quality score and recommendations without requiring labeled ground truth.",
+    "version": "1.0.0",
+    "category": "analysis",
+    "tags": [
+      "evaluation",
+      "quality",
+      "benchmarking",
+      "tuning"
+    ],
+    "tools": [
+      "query",
+      "similarity",
+      "transform",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 4,
+    "layersCount": 3,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "retrieve",
+        "tool": "query",
+        "name": "Run full retrieval pipeline"
+      },
+      {
+        "id": "score_relevance",
+        "tool": "similarity",
+        "name": "Score query-result similarity for each result"
+      },
+      {
+        "id": "format_results",
+        "tool": "transform",
+        "name": "Format results with scores for analysis"
+      },
+      {
+        "id": "quality_report",
+        "tool": "generate",
+        "name": "Generate quality assessment report"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-question-decomposition",
+    "slug": "question-decomposition",
+    "description": "Decompose a complex question into sub-queries, search each in parallel, merge results, and synthesize a comprehensive answer.",
+    "version": "1.0.0",
+    "category": "retrieval",
+    "tags": [
+      "decomposition",
+      "fan-out",
+      "synthesis",
+      "research"
+    ],
+    "tools": [
+      "generate",
+      "query",
+      "merge",
+      "rerank"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 7,
+    "layersCount": 5,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection": {
+        "type": "string",
+        "required": true
+      },
+      "limit": {
+        "type": "number",
+        "default": 10
+      }
+    },
+    "steps": [
+      {
+        "id": "decompose",
+        "tool": "generate",
+        "name": "Decompose question into sub-queries"
+      },
+      {
+        "id": "search_sub1",
+        "tool": "query",
+        "name": "Search for sub-question 1"
+      },
+      {
+        "id": "search_sub2",
+        "tool": "query",
+        "name": "Search for sub-question 2"
+      },
+      {
+        "id": "search_sub3",
+        "tool": "query",
+        "name": "Search for sub-question 3"
+      },
+      {
+        "id": "merged",
+        "tool": "merge",
+        "name": "Merge all sub-query results"
+      },
+      {
+        "id": "final_rerank",
+        "tool": "rerank",
+        "name": "Rerank against original question"
+      },
+      {
+        "id": "synthesize",
+        "tool": "generate",
+        "name": "Synthesize comprehensive answer"
+      }
+    ]
+  },
+  {
+    "name": "@vaicli/vai-workflow-rag-ab-test",
+    "slug": "rag-ab-test",
+    "description": "Run the same query through two different RAG configurations and compare results side-by-side with an LLM-generated evaluation.",
+    "version": "1.0.0",
+    "category": "integration",
+    "tags": [
+      "ab-test",
+      "comparison",
+      "evaluation",
+      "configuration"
+    ],
+    "tools": [
+      "query",
+      "generate"
+    ],
+    "minVaiVersion": "1.27.0",
+    "stepsCount": 5,
+    "layersCount": 3,
+    "inputs": {
+      "query": {
+        "type": "string",
+        "required": true
+      },
+      "collection_a": {
+        "type": "string",
+        "required": true
+      },
+      "collection_b": {
+        "type": "string",
+        "required": true
+      },
+      "model_a": {
+        "type": "string",
+        "default": "voyage-4-large"
+      },
+      "model_b": {
+        "type": "string",
+        "default": "voyage-4-lite"
+      },
+      "limit": {
+        "type": "number",
+        "default": 5
+      }
+    },
+    "steps": [
+      {
+        "id": "config_a",
+        "tool": "query",
+        "name": "Configuration A retrieval"
+      },
+      {
+        "id": "config_b",
+        "tool": "query",
+        "name": "Configuration B retrieval"
+      },
+      {
+        "id": "answer_a",
+        "tool": "generate",
+        "name": "Generate answer from Configuration A"
+      },
+      {
+        "id": "answer_b",
+        "tool": "generate",
+        "name": "Generate answer from Configuration B"
+      },
+      {
+        "id": "evaluation",
+        "tool": "generate",
+        "name": "Evaluate and compare configurations"
+      }
+    ]
+  }
+]

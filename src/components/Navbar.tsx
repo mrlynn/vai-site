@@ -27,6 +27,7 @@ const navItems = [
   { label: 'Why Voyage AI', href: '#why-voyage' },
   { label: 'Features', href: '#features' },
   { label: 'Models', href: '#models' },
+  { label: 'Workflows', href: '/workflows' },
   { label: 'Use Cases', href: '/use-cases' },
   { label: 'CLI', href: '#cli-demo' },
   { label: 'MCP', href: '#mcp' },
