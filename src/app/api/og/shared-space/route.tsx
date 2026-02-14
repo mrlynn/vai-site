@@ -23,14 +23,13 @@ export async function GET(request: NextRequest) {
           fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
-        {/* Top bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
           <div
             style={{
+              display: 'flex',
               fontSize: '36px',
               fontWeight: 800,
               color: '#00D4AA',
-              fontFamily: "monospace",
               letterSpacing: '-0.03em',
             }}
           >
@@ -38,6 +37,7 @@ export async function GET(request: NextRequest) {
           </div>
           <div
             style={{
+              display: 'flex',
               fontSize: '16px',
               color: '#889397',
               borderLeft: '2px solid #3D4F58',
@@ -48,23 +48,21 @@ export async function GET(request: NextRequest) {
           </div>
         </div>
 
-        {/* Main headline */}
         <div
           style={{
+            display: 'flex',
+            flexDirection: 'column',
             fontSize: '48px',
             fontWeight: 800,
             color: '#E8EDEB',
             lineHeight: 1.15,
             marginBottom: '40px',
-            maxWidth: '900px',
           }}
         >
-          3 Models. 1 Vector Space.
-          <br />
-          <span style={{ color: '#00D4AA' }}>Proven.</span>
+          <div style={{ display: 'flex' }}>3 Models. 1 Vector Space.</div>
+          <div style={{ display: 'flex', color: '#00D4AA' }}>Proven.</div>
         </div>
 
-        {/* Stats row */}
         <div style={{ display: 'flex', gap: '40px', marginBottom: '40px' }}>
           <div
             style={{
@@ -72,14 +70,14 @@ export async function GET(request: NextRequest) {
               flexDirection: 'column',
               padding: '24px 32px',
               borderRadius: '16px',
-              background: 'rgba(0, 212, 170, 0.08)',
-              border: '1px solid rgba(0, 212, 170, 0.25)',
+              background: 'rgba(0, 212, 170, 0.12)',
+              border: '2px solid rgba(0, 212, 170, 0.3)',
             }}
           >
-            <div style={{ fontSize: '56px', fontWeight: 800, color: '#00D4AA', lineHeight: 1 }}>
+            <div style={{ display: 'flex', fontSize: '56px', fontWeight: 800, color: '#00D4AA', lineHeight: 1 }}>
               {avg}
             </div>
-            <div style={{ fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
+            <div style={{ display: 'flex', fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
               cross-model similarity
             </div>
           </div>
@@ -94,10 +92,10 @@ export async function GET(request: NextRequest) {
               border: '1px solid #3D4F58',
             }}
           >
-            <div style={{ fontSize: '56px', fontWeight: 800, color: '#E8EDEB', lineHeight: 1 }}>
+            <div style={{ display: 'flex', fontSize: '56px', fontWeight: 800, color: '#E8EDEB', lineHeight: 1 }}>
               {min}
             </div>
-            <div style={{ fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
+            <div style={{ display: 'flex', fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
               weakest pair (still &gt;0.90)
             </div>
           </div>
@@ -108,25 +106,24 @@ export async function GET(request: NextRequest) {
               flexDirection: 'column',
               padding: '24px 32px',
               borderRadius: '16px',
-              background: 'rgba(0, 212, 170, 0.05)',
+              background: 'rgba(64, 224, 255, 0.05)',
               border: '1px solid #3D4F58',
             }}
           >
-            <div style={{ fontSize: '56px', fontWeight: 800, color: '#40E0FF', lineHeight: 1 }}>
+            <div style={{ display: 'flex', fontSize: '56px', fontWeight: 800, color: '#40E0FF', lineHeight: 1 }}>
               {savings}%
             </div>
-            <div style={{ fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
+            <div style={{ display: 'flex', fontSize: '16px', color: '#C1C7C6', marginTop: '8px' }}>
               query cost savings
             </div>
           </div>
         </div>
 
-        {/* Bottom */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-          <div style={{ fontSize: '18px', color: '#889397' }}>
-            {preset ? `Preset: ${preset}` : 'Try it yourself →'}{' '}vaicli.com/shared-space
+          <div style={{ display: 'flex', fontSize: '18px', color: '#889397' }}>
+            {preset && preset !== 'custom' ? `Preset: ${decodeURIComponent(preset)}  ·  ` : ''}vaicli.com/shared-space
           </div>
-          <div style={{ fontSize: '14px', color: '#3D4F58' }}>
+          <div style={{ display: 'flex', fontSize: '14px', color: '#3D4F58' }}>
             Powered by Voyage AI embedding models
           </div>
         </div>
