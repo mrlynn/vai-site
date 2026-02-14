@@ -41,8 +41,11 @@ export default function Hero() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCopyInstall = () => {
-    navigator.clipboard.writeText('npm install -g voyageai-cli');
+  const [copiedCmd, setCopiedCmd] = useState('');
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCmd(label);
     setCopied(true);
   };
 
@@ -206,19 +209,62 @@ export default function Hero() {
           />
         </Box>
 
+        {/* Quick install - curl front and center */}
+        <Box
+          onClick={() => handleCopy('curl -fsSL https://vaicli.com/install.sh | sh', 'curl')}
+          sx={{
+            maxWidth: 520,
+            mx: 'auto',
+            mb: 2,
+            px: 3,
+            py: 1.5,
+            bgcolor: palette.bgSurface,
+            border: `1px solid ${palette.accent}44`,
+            borderRadius: 2,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            transition: 'all 0.2s',
+            '&:hover': {
+              borderColor: palette.accent,
+              bgcolor: 'rgba(0, 237, 100, 0.05)',
+            },
+          }}
+        >
+          <Box
+            component="code"
+            sx={{
+              fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
+              fontSize: { xs: '0.75rem', sm: '0.9rem' },
+              color: palette.text,
+            }}
+          >
+            <Box component="span" sx={{ color: palette.accent }}>$</Box>{' '}
+            curl -fsSL https://vaicli.com/install.sh | sh
+          </Box>
+          <ContentCopyIcon sx={{ fontSize: 16, color: palette.textMuted, ml: 1, flexShrink: 0 }} />
+        </Box>
+
+        <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 3 }}>
+          Click to copy · Works on macOS, Linux &amp; WSL
+        </Typography>
+
+        {/* Alternative install methods */}
         <Box
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', sm: 'row' },
-            gap: 2,
+            gap: 1.5,
             justifyContent: 'center',
             alignItems: 'center',
             mb: 5,
+            flexWrap: 'wrap',
           }}
         >
           <Button
             variant="contained"
-            size="large"
+            size="medium"
             startIcon={<DownloadIcon />}
             href="https://github.com/mrlynn/voyageai-cli/releases"
             target="_blank"
@@ -227,26 +273,26 @@ export default function Hero() {
               bgcolor: palette.accent,
               color: palette.bg,
               fontWeight: 700,
-              px: 4,
-              py: 1.5,
-              fontSize: '1rem',
+              px: 3,
+              py: 1.2,
+              fontSize: '0.9rem',
               '&:hover': { bgcolor: palette.accentDim },
             }}
           >
-            Download Desktop App
+            Desktop App
           </Button>
 
           <Button
             variant="outlined"
-            size="large"
-            startIcon={<ContentCopyIcon />}
-            onClick={handleCopyInstall}
+            size="medium"
+            startIcon={<ContentCopyIcon sx={{ fontSize: 16 }} />}
+            onClick={() => handleCopy('npm i -g voyageai-cli', 'npm')}
             sx={{
               borderColor: palette.border,
               color: palette.text,
-              px: 4,
-              py: 1.5,
-              fontSize: '1rem',
+              px: 3,
+              py: 1.2,
+              fontSize: '0.9rem',
               '&:hover': {
                 borderColor: palette.accent,
                 bgcolor: 'rgba(0, 237, 100, 0.05)',
@@ -257,10 +303,38 @@ export default function Hero() {
               component="code"
               sx={{
                 fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
-                fontSize: '0.9rem',
+                fontSize: '0.85rem',
               }}
             >
               npm i -g voyageai-cli
+            </Box>
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="medium"
+            startIcon={<ContentCopyIcon sx={{ fontSize: 16 }} />}
+            onClick={() => handleCopy('brew install mrlynn/tap/voyageai-cli', 'brew')}
+            sx={{
+              borderColor: palette.border,
+              color: palette.text,
+              px: 3,
+              py: 1.2,
+              fontSize: '0.9rem',
+              '&:hover': {
+                borderColor: palette.accent,
+                bgcolor: 'rgba(0, 237, 100, 0.05)',
+              },
+            }}
+          >
+            <Box
+              component="code"
+              sx={{
+                fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
+                fontSize: '0.85rem',
+              }}
+            >
+              brew install voyageai-cli
             </Box>
           </Button>
         </Box>
@@ -333,7 +407,7 @@ export default function Hero() {
         open={copied}
         autoHideDuration={2000}
         onClose={() => setCopied(false)}
-        message="Copied to clipboard!"
+        message={`Copied ${copiedCmd} command!`}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
