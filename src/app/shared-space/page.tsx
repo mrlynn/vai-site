@@ -151,14 +151,20 @@ export default function SharedSpacePage() {
 
   const handleShare = () => {
     sendTelemetry('shared_space_share', { platform: 'linkedin' });
+    // Build share URL with result params so the OG image shows their actual numbers
+    const params = result
+      ? `?avg=${result.modelAgreement.avgSimilarity.toFixed(3)}&min=${result.modelAgreement.minSimilarity.toFixed(3)}&savings=${result.retrieval.costSavingsPercent}&preset=${encodeURIComponent(preset || 'custom')}`
+      : '';
+    const url = `https://vaicli.com/shared-space${params}`;
     const text = result
-      ? `🔬 Just tested Voyage AI's shared embedding space.\n\nI embedded the same text with three different models (voyage-4-large, voyage-4, voyage-4-lite).\n\nCross-model similarity: ${result.modelAgreement.avgSimilarity.toFixed(2)} — they produce nearly identical vectors despite being completely different architectures.\n\nThis means: embed your documents ONCE with the best model. Query with the cheapest.\n\nSame results. 83% less cost.\n\nTry it →`
-      : 'Check out the Voyage AI Shared Space Explorer — visualize how embedding models share the same vector space!';
-    const url = 'https://vaicli.com/shared-space';
+      ? `🔬 Just tested Voyage AI's shared embedding space.\n\nI embedded the same text with three different models (voyage-4-large, voyage-4, voyage-4-lite).\n\nCross-model similarity: ${result.modelAgreement.avgSimilarity.toFixed(2)} — they produce nearly identical vectors despite completely different architectures.\n\nEmbed documents ONCE with the best model. Query with the cheapest.\n\nSame results. ${result.retrieval.costSavingsPercent}% less cost.\n\nTry it yourself →`
+      : 'Visualize how Voyage AI embedding models share the same vector space — and why that saves you 83% on query costs.';
     window.open(
-      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&summary=${encodeURIComponent(text)}`,
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
       '_blank',
     );
+    // Also copy the text to clipboard for pasting into the LinkedIn post
+    navigator.clipboard?.writeText(text).catch(() => {});
   };
 
   return (
