@@ -290,7 +290,7 @@ export default function SharedSpacePage() {
                       sx={{
                         p: 3,
                         borderRadius: 2,
-                        bgcolor: 'rgba(0, 237, 100, 0.08)',
+                        bgcolor: 'rgba(0, 212, 170, 0.08)',
                         border: `2px solid ${palette.accent}`,
                         height: '100%',
                         display: 'flex',
@@ -457,7 +457,7 @@ export default function SharedSpacePage() {
                         sx={{
                           p: 2,
                           borderRadius: 1,
-                          bgcolor: 'rgba(0, 237, 100, 0.08)',
+                          bgcolor: 'rgba(0, 212, 170, 0.08)',
                           border: `1px solid ${palette.accent}`,
                         }}
                       >
@@ -504,7 +504,7 @@ export default function SharedSpacePage() {
                         mt: 2,
                         p: 2,
                         borderRadius: 1,
-                        bgcolor: 'rgba(0, 237, 100, 0.08)',
+                        bgcolor: 'rgba(0, 212, 170, 0.08)',
                         border: `1px solid ${palette.accentDim}`,
                       }}
                     >
@@ -532,7 +532,7 @@ export default function SharedSpacePage() {
                 sx={{
                   borderColor: palette.blue,
                   color: palette.blue,
-                  '&:hover': { borderColor: palette.blue, bgcolor: 'rgba(4, 152, 236, 0.1)' },
+                  '&:hover': { borderColor: palette.blue, bgcolor: 'rgba(64, 224, 255, 0.1)' },
                 }}
               >
                 Share on LinkedIn
@@ -544,7 +544,7 @@ export default function SharedSpacePage() {
                 sx={{
                   borderColor: palette.accent,
                   color: palette.accent,
-                  '&:hover': { borderColor: palette.accentDim, bgcolor: 'rgba(0, 237, 100, 0.1)' },
+                  '&:hover': { borderColor: palette.accentDim, bgcolor: 'rgba(0, 212, 170, 0.1)' },
                 }}
               >
                 Try vai →

@@ -93,7 +93,7 @@ export default function DesktopApp() {
                     color: palette.text,
                     '&:hover': {
                       borderColor: palette.accent,
-                      bgcolor: 'rgba(0, 237, 100, 0.05)',
+                      bgcolor: 'rgba(0, 212, 170, 0.05)',
                     },
                   }}
                 >

@@ -2,19 +2,23 @@
 
 import { createTheme } from '@mui/material/styles';
 
-// MongoDB Design System palette
+// vai Design System palette — aligned with /branding#colors
 export const palette = {
   bg: '#001E2B',
   bgSurface: '#112733',
   bgCard: '#1C2D38',
-  accent: '#00ED64',
-  accentDim: '#00A35C',
+  accent: '#00D4AA',
+  accentDim: '#009E80',
+  accentLight: '#5CE8CC',
   text: '#E8EDEB',
   textDim: '#C1C7C6',
   textMuted: '#889397',
   border: '#3D4F58',
-  blue: '#0498EC',
+  blue: '#40E0FF',
+  blueDark: '#0088CC',
   purple: '#B45AF2',
+  red: '#FF6960',
+  yellow: '#FFC010',
 };
 
 const theme = createTheme({
@@ -23,9 +27,11 @@ const theme = createTheme({
     primary: {
       main: palette.accent,
       dark: palette.accentDim,
+      light: palette.accentLight,
     },
     secondary: {
       main: palette.blue,
+      dark: palette.blueDark,
     },
     background: {
       default: palette.bg,

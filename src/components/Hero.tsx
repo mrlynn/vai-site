@@ -85,7 +85,7 @@ export default function Hero() {
           size="small"
           sx={{
             mb: 3,
-            bgcolor: 'rgba(0, 237, 100, 0.1)',
+            bgcolor: 'rgba(0, 212, 170, 0.1)',
             color: palette.accent,
             border: `1px solid ${palette.accent}33`,
             fontWeight: 600,
@@ -201,7 +201,7 @@ export default function Hero() {
           <Chip
             label="#1 MTEB Ranking"
             sx={{
-              bgcolor: 'rgba(0, 237, 100, 0.1)',
+              bgcolor: 'rgba(0, 212, 170, 0.1)',
               color: palette.accent,
               border: `1px solid ${palette.accent}33`,
               fontWeight: 600,
@@ -228,7 +228,7 @@ export default function Hero() {
             transition: 'all 0.2s',
             '&:hover': {
               borderColor: palette.accent,
-              bgcolor: 'rgba(0, 237, 100, 0.05)',
+              bgcolor: 'rgba(0, 212, 170, 0.05)',
             },
           }}
         >
@@ -295,7 +295,7 @@ export default function Hero() {
               fontSize: '0.9rem',
               '&:hover': {
                 borderColor: palette.accent,
-                bgcolor: 'rgba(0, 237, 100, 0.05)',
+                bgcolor: 'rgba(0, 212, 170, 0.05)',
               },
             }}
           >
@@ -323,7 +323,7 @@ export default function Hero() {
               fontSize: '0.9rem',
               '&:hover': {
                 borderColor: palette.accent,
-                bgcolor: 'rgba(0, 237, 100, 0.05)',
+                bgcolor: 'rgba(0, 212, 170, 0.05)',
               },
             }}
           >

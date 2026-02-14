@@ -117,7 +117,7 @@ function WorldMap({ countryData, cityData = [] }: WorldMapProps) {
                 px: 1.5,
                 '&.Mui-selected': {
                   color: palette.accent,
-                  bgcolor: 'rgba(0, 237, 100, 0.1)',
+                  bgcolor: 'rgba(0, 212, 170, 0.1)',
                 },
               },
             }}

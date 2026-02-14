@@ -143,7 +143,7 @@ function StatCard({
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 2.5 }}>
         <Box
           sx={{
-            bgcolor: 'rgba(0, 237, 100, 0.1)',
+            bgcolor: 'rgba(0, 212, 170, 0.1)',
             borderRadius: 2,
             p: 1.5,
             display: 'flex',
@@ -219,7 +219,7 @@ function DataTable({
                       label={String(row[labelKey] || 'unknown')}
                       size="small"
                       sx={{
-                        bgcolor: 'rgba(0, 237, 100, 0.08)',
+                        bgcolor: 'rgba(0, 212, 170, 0.08)',
                         color: palette.accent,
                         fontFamily: 'monospace',
                         fontSize: '0.8rem',
@@ -429,7 +429,7 @@ export default function Dashboard() {
                   borderColor: palette.border,
                   '&.Mui-selected': {
                     color: palette.accent,
-                    bgcolor: 'rgba(0, 237, 100, 0.1)',
+                    bgcolor: 'rgba(0, 212, 170, 0.1)',
                   },
                 },
               }}
@@ -461,7 +461,7 @@ export default function Dashboard() {
                 px: 3,
                 '&.Mui-selected': {
                   color: palette.accent,
-                  bgcolor: 'rgba(0, 237, 100, 0.1)',
+                  bgcolor: 'rgba(0, 212, 170, 0.1)',
                 },
               },
             }}
@@ -764,7 +764,7 @@ export default function Dashboard() {
                               label={String(evt.event)}
                               size="small"
                               sx={{
-                                bgcolor: 'rgba(0, 237, 100, 0.08)',
+                                bgcolor: 'rgba(0, 212, 170, 0.08)',
                                 color: palette.accent,
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
@@ -1007,7 +1007,7 @@ export default function Dashboard() {
                                 label={String(q.slug || '—')}
                                 size="small"
                                 sx={{
-                                  bgcolor: 'rgba(0, 237, 100, 0.08)',
+                                  bgcolor: 'rgba(0, 212, 170, 0.08)',
                                   color: palette.accent,
                                   fontFamily: 'monospace',
                                   fontSize: '0.75rem',
@@ -1129,7 +1129,7 @@ export default function Dashboard() {
                             {stats.commands.commandTiming.slice(0, 15).map((row, i) => (
                               <TableRow key={i}>
                                 <TableCell sx={{ borderColor: palette.border }}>
-                                  <Chip label={row.event} size="small" sx={{ bgcolor: 'rgba(0, 237, 100, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                                  <Chip label={row.event} size="small" sx={{ bgcolor: 'rgba(0, 212, 170, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.8rem' }} />
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border, fontFamily: 'monospace' }}>{row.avgMs.toLocaleString()}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border, fontFamily: 'monospace' }}>{row.maxMs.toLocaleString()}</TableCell>
@@ -1236,7 +1236,7 @@ export default function Dashboard() {
                         {stats.models.asymmetricPairs.slice(0, 15).map((row, i) => (
                           <TableRow key={i}>
                             <TableCell sx={{ borderColor: palette.border }}>
-                              <Chip label={row.embedModel} size="small" sx={{ bgcolor: 'rgba(0, 237, 100, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                              <Chip label={row.embedModel} size="small" sx={{ bgcolor: 'rgba(0, 212, 170, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.75rem' }} />
                             </TableCell>
                             <TableCell sx={{ borderColor: palette.border }}>
                               <Chip label={row.rerankModel} size="small" sx={{ bgcolor: 'rgba(102, 126, 234, 0.1)', color: palette.blue, fontFamily: 'monospace', fontSize: '0.75rem' }} />
