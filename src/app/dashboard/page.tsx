@@ -40,6 +40,9 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
 import { BarChart, LineChart } from '@mui/x-charts';
 import dynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
@@ -95,6 +98,28 @@ interface Stats {
     scoreDistribution: { bucket: string; count: number }[];
     waveDistribution: { wave: number; count: number }[];
   };
+  commands: {
+    commandBreakdown: { event: string; count: number }[];
+    commandTiming: { event: string; avgMs: number; maxMs: number; count: number }[];
+    pipelineStrategies: { strategy: string; count: number }[];
+  };
+  models: {
+    modelDistribution: { model: string; count: number }[];
+    modelTimeline: { date: string; model: string; count: number }[];
+    asymmetricPairs: { embedModel: string; rerankModel: string; count: number }[];
+  };
+  workflows: {
+    workflowRuns: { workflowName: string; count: number }[];
+    workflowInstalls: { packageName: string; count: number }[];
+    workflowOrigin: { builtin: number; community: number; other: number };
+  };
+  errors: {
+    errorsByCommand: { command: string; count: number }[];
+    errorsByType: { errorType: string; count: number }[];
+    dailyErrors: { date: string; count: number }[];
+    errorsByVersion: { version: string; count: number }[];
+  };
+  contextTimeline: { date: string; context: string; count: number }[];
 }
 
 function StatCard({
@@ -224,7 +249,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<string>('30');
-  const [activeTab, setActiveTab] = useState<'overview' | 'usecases' | 'game'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'commands' | 'models' | 'workflows' | 'usecases' | 'errors' | 'game'>('overview');
 
   // Persist API key in sessionStorage
   useEffect(() => {
@@ -442,7 +467,11 @@ export default function Dashboard() {
             }}
           >
             <ToggleButton value="overview">Overview</ToggleButton>
+            <ToggleButton value="commands">Commands</ToggleButton>
+            <ToggleButton value="models">Models</ToggleButton>
+            <ToggleButton value="workflows">Workflows</ToggleButton>
             <ToggleButton value="usecases">Use Cases</ToggleButton>
+            <ToggleButton value="errors">Errors</ToggleButton>
             <ToggleButton value="game">🎮 Game</ToggleButton>
           </ToggleButtonGroup>
         </Box>
@@ -1010,6 +1039,430 @@ export default function Dashboard() {
             )}
           </>
         )}
+        {stats && activeTab === 'commands' && (
+          <>
+            {/* Command Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Command Executions"
+                  value={stats.commands?.commandBreakdown?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<TerminalIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Unique Commands"
+                  value={stats.commands?.commandBreakdown?.length || 0}
+                  icon={<BarChartIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Avg Execution Time"
+                  value={
+                    stats.commands?.commandTiming?.length
+                      ? `${Math.round(stats.commands.commandTiming.reduce((s, e) => s + e.avgMs * e.count, 0) / stats.commands.commandTiming.reduce((s, e) => s + e.count, 0))}ms`
+                      : '—'
+                  }
+                  icon={<SpeedIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Error Rate"
+                  value={
+                    (() => {
+                      const totalCmd = stats.commands?.commandBreakdown?.reduce((s, e) => s + e.count, 0) || 0;
+                      const totalErr = stats.errors?.errorsByCommand?.reduce((s, e) => s + e.count, 0) || 0;
+                      return totalCmd > 0 ? `${((totalErr / totalCmd) * 100).toFixed(1)}%` : '—';
+                    })()
+                  }
+                  icon={<ErrorOutlineIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Command Frequency Chart */}
+            {stats.commands?.commandBreakdown?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TerminalIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Command Frequency (Top 15)</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 300 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.commands.commandBreakdown.slice(0, 15).map((e) => e.event.replace('cli_', '')),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.commands.commandBreakdown.slice(0, 15).map((e) => e.count), color: palette.accent }]}
+                    height={280}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Command Timing & Pipeline Strategies */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {stats.commands?.commandTiming?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}` }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <SpeedIcon sx={{ color: palette.blue, fontSize: 20 }} />
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>Command Timing</Typography>
+                      </Box>
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>Event</TableCell>
+                              <TableCell align="right" sx={{ color: palette.textMuted, borderColor: palette.border }}>Avg (ms)</TableCell>
+                              <TableCell align="right" sx={{ color: palette.textMuted, borderColor: palette.border }}>Max (ms)</TableCell>
+                              <TableCell align="right" sx={{ color: palette.textMuted, borderColor: palette.border }}>Count</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {stats.commands.commandTiming.slice(0, 15).map((row, i) => (
+                              <TableRow key={i}>
+                                <TableCell sx={{ borderColor: palette.border }}>
+                                  <Chip label={row.event} size="small" sx={{ bgcolor: 'rgba(0, 237, 100, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.8rem' }} />
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border, fontFamily: 'monospace' }}>{row.avgMs.toLocaleString()}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border, fontFamily: 'monospace' }}>{row.maxMs.toLocaleString()}</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border }}>{row.count.toLocaleString()}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              )}
+              {stats.commands?.pipelineStrategies?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DataTable
+                    title="Pipeline Chunk Strategies"
+                    icon={<AccountTreeIcon sx={{ color: palette.purple, fontSize: 20 }} />}
+                    rows={stats.commands.pipelineStrategies}
+                    labelKey="strategy"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
+
+        {stats && activeTab === 'models' && (
+          <>
+            {/* Model Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Most Popular Model"
+                  value={stats.models?.modelDistribution?.[0]?.model || '—'}
+                  icon={<ModelTrainingIcon sx={{ color: palette.accent }} />}
+                  subtitle={stats.models?.modelDistribution?.[0] ? `${stats.models.modelDistribution[0].count} uses` : undefined}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Models in Use"
+                  value={stats.models?.modelDistribution?.length || 0}
+                  icon={<BarChartIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Asymmetric Retrieval Pairs"
+                  value={stats.models?.asymmetricPairs?.length || 0}
+                  icon={<DevicesIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Model Events"
+                  value={stats.models?.modelDistribution?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<TrendingUpIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Model Distribution Chart */}
+            {stats.models?.modelDistribution?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <ModelTrainingIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Model Distribution</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 300 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.models.modelDistribution.slice(0, 15).map((e) => e.model.length > 20 ? e.model.slice(0, 20) + '…' : e.model),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.models.modelDistribution.slice(0, 15).map((e) => e.count), color: palette.purple }]}
+                    height={280}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Asymmetric Pairs Table */}
+            {stats.models?.asymmetricPairs?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4 }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <DevicesIcon sx={{ color: palette.blue, fontSize: 20 }} />
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Asymmetric Retrieval Pairs</Typography>
+                  </Box>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>Embed Model</TableCell>
+                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>Rerank Model</TableCell>
+                          <TableCell align="right" sx={{ color: palette.textMuted, borderColor: palette.border }}>Count</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {stats.models.asymmetricPairs.slice(0, 15).map((row, i) => (
+                          <TableRow key={i}>
+                            <TableCell sx={{ borderColor: palette.border }}>
+                              <Chip label={row.embedModel} size="small" sx={{ bgcolor: 'rgba(0, 237, 100, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                            </TableCell>
+                            <TableCell sx={{ borderColor: palette.border }}>
+                              <Chip label={row.rerankModel} size="small" sx={{ bgcolor: 'rgba(102, 126, 234, 0.1)', color: palette.blue, fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border }}>{row.count.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
+        {stats && activeTab === 'workflows' && (
+          <>
+            {/* Workflow Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Workflow Runs"
+                  value={stats.workflows?.workflowRuns?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<AccountTreeIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Unique Workflows"
+                  value={stats.workflows?.workflowRuns?.length || 0}
+                  icon={<BarChartIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Community Installs"
+                  value={stats.workflows?.workflowInstalls?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<DownloadForOfflineIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Builtin vs Community"
+                  value={`${stats.workflows?.workflowOrigin?.builtin || 0} / ${stats.workflows?.workflowOrigin?.community || 0}`}
+                  icon={<DevicesIcon sx={{ color: palette.accent }} />}
+                  subtitle="builtin / community runs"
+                />
+              </Grid>
+            </Grid>
+
+            {/* Top Workflows Chart */}
+            {stats.workflows?.workflowRuns?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <AccountTreeIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Top Workflows by Run Count</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 300 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.workflows.workflowRuns.slice(0, 15).map((e) => e.workflowName),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.workflows.workflowRuns.slice(0, 15).map((e) => e.count), color: palette.accent }]}
+                    height={280}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Workflow Installs Table */}
+            {stats.workflows?.workflowInstalls?.length > 0 && (
+              <DataTable
+                title="Workflow Installs"
+                icon={<DownloadForOfflineIcon sx={{ color: palette.blue, fontSize: 20 }} />}
+                rows={stats.workflows.workflowInstalls}
+                labelKey="packageName"
+                valueKey="count"
+              />
+            )}
+          </>
+        )}
+
+        {stats && activeTab === 'errors' && (
+          <>
+            {/* Error Summary Cards */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Total Errors"
+                  value={stats.errors?.errorsByCommand?.reduce((s, e) => s + e.count, 0) || 0}
+                  icon={<ErrorOutlineIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Error Rate"
+                  value={
+                    (() => {
+                      const totalCmd = stats.commands?.commandBreakdown?.reduce((s, e) => s + e.count, 0) || 0;
+                      const totalErr = stats.errors?.errorsByCommand?.reduce((s, e) => s + e.count, 0) || 0;
+                      return totalCmd > 0 ? `${((totalErr / totalCmd) * 100).toFixed(1)}%` : '—';
+                    })()
+                  }
+                  icon={<TrendingUpIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Most Errored Command"
+                  value={stats.errors?.errorsByCommand?.[0]?.command || '—'}
+                  icon={<TerminalIcon sx={{ color: palette.accent }} />}
+                  subtitle={stats.errors?.errorsByCommand?.[0] ? `${stats.errors.errorsByCommand[0].count} errors` : undefined}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                <StatCard
+                  title="Error Types"
+                  value={stats.errors?.errorsByType?.length || 0}
+                  icon={<BarChartIcon sx={{ color: palette.accent }} />}
+                />
+              </Grid>
+            </Grid>
+
+            {/* Errors by Command Chart */}
+            {stats.errors?.errorsByCommand?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TerminalIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Errors by Command</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.errors.errorsByCommand.slice(0, 15).map((e) => e.command),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.errors.errorsByCommand.slice(0, 15).map((e) => e.count), color: '#ff6b6b' }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Errors by Type Chart */}
+            {stats.errors?.errorsByType?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <ErrorOutlineIcon sx={{ color: '#ff6b6b' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Errors by Type</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <BarChart
+                    xAxis={[{
+                      data: stats.errors.errorsByType.map((e) => e.errorType),
+                      scaleType: 'band',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{ data: stats.errors.errorsByType.map((e) => e.count), color: palette.purple }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Daily Error Rate */}
+            {stats.errors?.dailyErrors?.length > 0 && (
+              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <TimelineIcon sx={{ color: '#ff6b6b' }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Daily Error Rate</Typography>
+                </Box>
+                <Box sx={{ width: '100%', height: 280 }}>
+                  <LineChart
+                    xAxis={[{
+                      data: stats.errors.dailyErrors.map((d) => new Date(d.date)),
+                      scaleType: 'time',
+                      tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                    }]}
+                    yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                    series={[{
+                      data: stats.errors.dailyErrors.map((d) => d.count),
+                      color: '#ff6b6b',
+                      area: true,
+                      showMark: false,
+                    }]}
+                    height={260}
+                  />
+                </Box>
+              </Card>
+            )}
+
+            {/* Errors by Version */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {stats.errors?.errorsByVersion?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DataTable
+                    title="Errors by Version"
+                    icon={<BarChartIcon sx={{ color: palette.blue, fontSize: 20 }} />}
+                    rows={stats.errors.errorsByVersion}
+                    labelKey="version"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
+              {stats.errors?.errorsByType?.length > 0 && (
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <DataTable
+                    title="Error Types"
+                    icon={<ErrorOutlineIcon sx={{ color: '#ff6b6b', fontSize: 20 }} />}
+                    rows={stats.errors.errorsByType}
+                    labelKey="errorType"
+                    valueKey="count"
+                  />
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
+
         {stats && activeTab === 'game' && (
           <>
             {/* Game Summary Cards */}

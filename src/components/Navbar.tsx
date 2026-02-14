@@ -36,7 +36,7 @@ const navItems = [
 
 export default function Navbar() {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery('(max-width:1024px)');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [stars, setStars] = useState<number | null>(null);
 
@@ -58,7 +58,7 @@ export default function Navbar() {
           borderBottom: `1px solid ${palette.border}`,
         }}
       >
-        <Container maxWidth="lg">
+        <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ minHeight: 64 }}>
             <Box
               component="a"
@@ -68,7 +68,7 @@ export default function Navbar() {
                 alignItems: 'center',
                 gap: 1,
                 textDecoration: 'none',
-                mr: 4,
+                mr: 3,
               }}
             >
               <Box
@@ -92,7 +92,7 @@ export default function Navbar() {
             </Box>
 
             {!isMobile && (
-              <Box sx={{ display: 'flex', gap: 0.5, flexGrow: 1 }}>
+              <Box sx={{ display: 'flex', gap: 0.25, flexGrow: 1 }}>
                 {navItems.map((item) => (
                   <Button
                     key={item.label}
@@ -101,7 +101,12 @@ export default function Navbar() {
                     rel={item.external ? 'noopener noreferrer' : undefined}
                     sx={{
                       color: palette.textDim,
-                      fontSize: '0.9rem',
+                      fontSize: '0.82rem',
+                      px: 1.2,
+                      py: 0.8,
+                      minWidth: 'auto',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                       '&:hover': { color: palette.text, bgcolor: 'rgba(255,255,255,0.05)' },
                     }}
                   >
@@ -161,7 +166,7 @@ export default function Navbar() {
                 size="small"
                 href="#cli-demo"
                 sx={{
-                  ml: 2,
+                  ml: 1.5,
                   bgcolor: palette.accent,
                   color: palette.bg,
                   fontWeight: 700,

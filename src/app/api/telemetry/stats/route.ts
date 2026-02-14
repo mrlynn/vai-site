@@ -65,6 +65,21 @@ export async function GET(request: NextRequest) {
       gameDailyActivity,
       gameScoreDistribution,
       gameWaveDistribution,
+      // Phase 3 aggregations
+      commandBreakdown,
+      commandTiming,
+      pipelineStrategies,
+      modelDistribution,
+      modelTimeline,
+      asymmetricPairs,
+      workflowRuns,
+      workflowInstalls,
+      workflowOrigin,
+      errorsByCommand,
+      errorsByType,
+      dailyErrors,
+      errorsByVersion,
+      contextTimeline,
     ] = await Promise.all([
       // Total events (all time)
       collection.countDocuments(),
@@ -404,6 +419,204 @@ export async function GET(request: NextRequest) {
           { $sort: { _id: 1 } },
         ])
         .toArray(),
+
+      // ── Phase 3: CLI telemetry aggregations ──
+
+      // commandBreakdown: cli_* events (excluding cli_command), grouped by event
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: { $regex: /^cli_/, $ne: 'cli_command' } } },
+          { $group: { _id: '$event', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // commandTiming: events with durationMs, avg/max per event
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, durationMs: { $exists: true, $type: 'number' } } },
+          {
+            $group: {
+              _id: '$event',
+              avgMs: { $avg: '$durationMs' },
+              maxMs: { $max: '$durationMs' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // pipelineStrategies: cli_pipeline events grouped by chunkStrategy
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_pipeline', chunkStrategy: { $exists: true, $ne: null } } },
+          { $group: { _id: '$chunkStrategy', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // modelDistribution: events with model field, grouped by model
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, model: { $exists: true, $ne: null } } },
+          { $group: { _id: '$model', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // modelTimeline: daily counts per model
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, model: { $exists: true, $ne: null } } },
+          {
+            $group: {
+              _id: {
+                date: { $dateToString: { format: '%Y-%m-%d', date: '$receivedAt' } },
+                model: '$model',
+              },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { '_id.date': 1 } },
+        ])
+        .toArray(),
+
+      // asymmetricPairs: cli_query events with both model and rerankModel
+      collection
+        .aggregate([
+          {
+            $match: {
+              ...rangeFilter,
+              event: 'cli_query',
+              model: { $exists: true, $ne: null },
+              rerankModel: { $exists: true, $ne: null },
+            },
+          },
+          {
+            $group: {
+              _id: { embedModel: '$model', rerankModel: '$rerankModel' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // workflowRuns: cli_workflow_run + playground_workflow_run by workflowName
+      collection
+        .aggregate([
+          {
+            $match: {
+              ...rangeFilter,
+              event: { $in: ['cli_workflow_run', 'playground_workflow_run'] },
+              workflowName: { $exists: true, $ne: null },
+            },
+          },
+          { $group: { _id: '$workflowName', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // workflowInstalls: cli_workflow_install by packageName
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_workflow_install' } },
+          { $group: { _id: '$workflowName', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // workflowOrigin: builtin vs community counts
+      collection
+        .aggregate([
+          {
+            $match: {
+              ...rangeFilter,
+              event: { $in: ['cli_workflow_run', 'playground_workflow_run'] },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              builtin: { $sum: { $cond: [{ $eq: ['$isBuiltin', true] }, 1, 0] } },
+              community: { $sum: { $cond: [{ $eq: ['$isCommunity', true] }, 1, 0] } },
+              other: {
+                $sum: {
+                  $cond: [
+                    {
+                      $and: [
+                        { $ne: ['$isBuiltin', true] },
+                        { $ne: ['$isCommunity', true] },
+                      ],
+                    },
+                    1,
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ])
+        .toArray(),
+
+      // errorsByCommand: cli_error events grouped by command
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_error', command: { $exists: true, $ne: null } } },
+          { $group: { _id: '$command', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // errorsByType: cli_error events grouped by errorType
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_error', errorType: { $exists: true, $ne: null } } },
+          { $group: { _id: '$errorType', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // dailyErrors: cli_error daily counts
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_error' } },
+          {
+            $group: {
+              _id: { $dateToString: { format: '%Y-%m-%d', date: '$receivedAt' } },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ])
+        .toArray(),
+
+      // errorsByVersion: cli_error grouped by version
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, event: 'cli_error', version: { $exists: true, $ne: null } } },
+          { $group: { _id: '$version', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // contextTimeline: daily counts per context
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, context: { $exists: true, $ne: null } } },
+          {
+            $group: {
+              _id: {
+                date: { $dateToString: { format: '%Y-%m-%d', date: '$receivedAt' } },
+                context: '$context',
+              },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { '_id.date': 1 } },
+        ])
+        .toArray(),
     ]);
 
     return NextResponse.json({
@@ -473,6 +686,45 @@ export async function GET(request: NextRequest) {
         }),
         waveDistribution: (gameWaveDistribution as any[]).map((e: any) => ({ wave: e._id, count: e.count })),
       },
+      commands: {
+        commandBreakdown: (commandBreakdown as any[]).map((e: any) => ({ event: e._id, count: e.count })),
+        commandTiming: (commandTiming as any[]).map((e: any) => ({
+          event: e._id,
+          avgMs: Math.round(e.avgMs),
+          maxMs: Math.round(e.maxMs),
+          count: e.count,
+        })),
+        pipelineStrategies: (pipelineStrategies as any[]).map((e: any) => ({ strategy: e._id, count: e.count })),
+      },
+      models: {
+        modelDistribution: (modelDistribution as any[]).map((e: any) => ({ model: e._id, count: e.count })),
+        modelTimeline: (modelTimeline as any[]).map((e: any) => ({
+          date: e._id.date,
+          model: e._id.model,
+          count: e.count,
+        })),
+        asymmetricPairs: (asymmetricPairs as any[]).map((e: any) => ({
+          embedModel: e._id.embedModel,
+          rerankModel: e._id.rerankModel,
+          count: e.count,
+        })),
+      },
+      workflows: {
+        workflowRuns: (workflowRuns as any[]).map((e: any) => ({ workflowName: e._id, count: e.count })),
+        workflowInstalls: (workflowInstalls as any[]).map((e: any) => ({ packageName: e._id, count: e.count })),
+        workflowOrigin: (workflowOrigin as any[])[0] || { builtin: 0, community: 0, other: 0 },
+      },
+      errors: {
+        errorsByCommand: (errorsByCommand as any[]).map((e: any) => ({ command: e._id, count: e.count })),
+        errorsByType: (errorsByType as any[]).map((e: any) => ({ errorType: e._id, count: e.count })),
+        dailyErrors: (dailyErrors as any[]).map((e: any) => ({ date: e._id, count: e.count })),
+        errorsByVersion: (errorsByVersion as any[]).map((e: any) => ({ version: e._id, count: e.count })),
+      },
+      contextTimeline: (contextTimeline as any[]).map((e: any) => ({
+        date: e._id.date,
+        context: e._id.context,
+        count: e.count,
+      })),
     });
   } catch (error) {
     console.error('Stats error:', error);
