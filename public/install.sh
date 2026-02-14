@@ -33,12 +33,10 @@ fatal()   { error "$1"; exit 1; }
 banner() {
   printf "\n"
   printf "${BOLD}${BLUE}"
-  printf "         _\n"
-  printf " __   __(_)\n"
-  printf " \\ \\ / / _\n"
-  printf "  \\ V / | |\n"
-  printf "   \\_/  |_|  CLI Installer\n"
-  printf "${RESET}\n"
+  printf "  ╦  ╦╔═╗╦\n"
+  printf "  ╚╗╔╝╠═╣║\n"
+  printf "   ╚╝ ╩ ╩╩  ${RESET}${DIM}CLI Installer${RESET}\n"
+  printf "\n"
   printf "  ${DIM}https://vaicli.com${RESET}\n\n"
 }
 
