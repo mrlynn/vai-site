@@ -14,6 +14,8 @@ import {
   FormControl,
   InputLabel,
   Skeleton,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
@@ -109,6 +111,7 @@ export default function SharedSpacePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResponse | null>(null);
   const [error, setError] = useState('');
+  const [snackOpen, setSnackOpen] = useState(false);
 
   const handlePreset = (value: string) => {
     setPreset(value);
@@ -163,8 +166,8 @@ export default function SharedSpacePage() {
       `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
       '_blank',
     );
-    // Also copy the text to clipboard for pasting into the LinkedIn post
-    navigator.clipboard?.writeText(text).catch(() => {});
+    // Copy post text to clipboard and notify user
+    navigator.clipboard?.writeText(text).then(() => setSnackOpen(true)).catch(() => {});
   };
 
   return (
@@ -571,6 +574,21 @@ export default function SharedSpacePage() {
           </>
         )}
       </Container>
+
+      <Snackbar
+        open={snackOpen}
+        autoHideDuration={5000}
+        onClose={() => setSnackOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackOpen(false)}
+          severity="success"
+          sx={{ bgcolor: palette.bgSurface, color: palette.text, border: `1px solid ${palette.accent}` }}
+        >
+          📋 Post text copied to clipboard — paste it into your LinkedIn post!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
