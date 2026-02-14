@@ -23,7 +23,7 @@ setInterval(() => {
   }
 }, 600_000);
 
-const VOYAGE_BASE = process.env.VOYAGE_BASE_URL || 'https://api.voyageai.com/v1';
+const VOYAGE_BASE = (process.env.VOYAGE_BASE_URL || 'https://api.voyageai.com/v1').replace(/\/+$/, '');
 const MODELS = ['voyage-4-large', 'voyage-4', 'voyage-4-lite'] as const;
 const COST_PER_MILLION: Record<string, number> = {
   'voyage-4-large': 0.12,
