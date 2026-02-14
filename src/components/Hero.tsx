@@ -314,7 +314,7 @@ export default function Hero() {
             variant="outlined"
             size="medium"
             startIcon={<ContentCopyIcon sx={{ fontSize: 16 }} />}
-            onClick={() => handleCopy('brew install mrlynn/tap/voyageai-cli', 'brew')}
+            onClick={() => handleCopy('brew install mrlynn/vai/vai', 'brew')}
             sx={{
               borderColor: palette.border,
               color: palette.text,
@@ -334,7 +334,7 @@ export default function Hero() {
                 fontSize: '0.85rem',
               }}
             >
-              brew install voyageai-cli
+              brew install mrlynn/vai/vai
             </Box>
           </Button>
         </Box>
