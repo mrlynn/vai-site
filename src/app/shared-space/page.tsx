@@ -22,73 +22,71 @@ import { palette } from '@/theme/theme';
 
 const PRESETS = [
   {
-    label: 'Tech Docs',
-    document:
-      'Kubernetes uses pods as the smallest deployable unit. A pod encapsulates one or more containers, storage resources, a unique network IP, and options that govern how the containers should run. Pods support co-located helper processes like logging agents and represent a logical host for tightly coupled application components.',
-    query: 'How does container orchestration work?',
+    label: 'Tech vs Finance',
+    textA: 'Kubernetes uses pods as the smallest deployable unit of computing. A pod encapsulates one or more containers, storage resources, a unique network IP, and options that govern how the containers should run. Pods support co-located helper processes like logging agents.',
+    textB: 'The company reported Q3 revenue of $4.2B, representing a 23% year-over-year increase. Operating margins expanded to 34.5%, driven by cloud services growth. Free cash flow reached $1.8B, enabling the board to authorize an additional $5B share repurchase program.',
   },
   {
-    label: 'Legal',
-    document:
-      'The lessee shall maintain the premises in good condition and repair, ordinary wear and tear excepted. The lessee shall not make any alterations, additions, or improvements to the premises without the prior written consent of the lessor. All fixtures and improvements shall become the property of the lessor upon termination.',
-    query: "What are the tenant's maintenance obligations?",
+    label: 'Same Domain',
+    textA: 'Kubernetes pod scheduling uses affinity rules to place workloads on appropriate nodes. Node affinity attracts pods to specific nodes while anti-affinity spreads pods across failure domains for high availability.',
+    textB: 'PostgreSQL uses a multi-version concurrency control system for transaction isolation. Each transaction sees a snapshot of data as it was at a particular point in time, preventing dirty reads and ensuring consistent query results.',
   },
   {
-    label: 'Finance',
-    document:
-      'The company reported Q3 revenue of $4.2B, representing a 23% year-over-year increase. Operating margins expanded to 34.5%, driven by cloud services growth. Free cash flow reached $1.8B, enabling the board to authorize an additional $5B share repurchase program.',
-    query: 'What was the quarterly revenue performance?',
+    label: 'Paraphrase',
+    textA: 'Machine learning models learn patterns from training data by adjusting internal parameters to minimize prediction errors on known examples.',
+    textB: 'ML systems identify patterns by analyzing example datasets, tuning their internal weights to reduce mistakes on labeled training samples.',
   },
   {
-    label: 'Healthcare',
-    document:
-      'Patients presenting with acute chest pain should undergo immediate 12-lead ECG within 10 minutes of arrival. Troponin levels should be measured at presentation and at 3 hours. Risk stratification using HEART score determines disposition: low risk (0-3) for outpatient follow-up, moderate (4-6) for observation, high (7-10) for cardiology consultation.',
-    query: 'What is the protocol for chest pain evaluation?',
+    label: 'Multilingual',
+    textA: 'The weather forecast indicates rain tomorrow with temperatures dropping to near freezing by evening. Residents should prepare for icy road conditions.',
+    textB: 'Les prévisions météo indiquent de la pluie demain avec des températures proches du gel en soirée. Les résidents doivent se préparer à des routes verglaçantes.',
   },
   {
-    label: 'General',
-    document:
-      'The James Webb Space Telescope uses a 6.5-meter primary mirror composed of 18 hexagonal gold-plated beryllium segments. Operating at the second Lagrange point (L2), approximately 1.5 million kilometers from Earth, it captures infrared light from the earliest galaxies formed after the Big Bang.',
-    query: 'How does the new space telescope capture images?',
+    label: 'Legal vs Healthcare',
+    textA: 'The lessee shall maintain the premises in good condition and repair, ordinary wear and tear excepted. The lessee shall not make any alterations, additions, or improvements without the prior written consent of the lessor.',
+    textB: 'Patients presenting with acute chest pain should undergo immediate 12-lead ECG within 10 minutes of arrival. Troponin levels should be measured at presentation and at 3 hours. Risk stratification using HEART score determines disposition.',
   },
 ];
 
-interface EmbeddingInfo {
-  model: string;
-  documentTokens: number;
-  queryTokens: number;
-  costPerMillion: number;
-  documentCost: number;
-  queryCost: number;
-}
-
-interface Similarity {
+interface AgreementPair {
   a: string;
   b: string;
   similarity: number;
 }
 
-interface Projection {
+interface ProjectionPoint {
   label: string;
-  type: 'document' | 'query' | 'control';
+  group: string;
   model: string;
   x: number;
   y: number;
 }
 
-interface Insight {
-  crossModelSimilarity: number;
-  sameModelSimilarity: number;
-  qualityRetention: number;
-  savingsPercent: number;
-  monthlyAt1M: { symmetric: number; asymmetric: number };
-}
-
 interface ApiResponse {
-  embeddings: EmbeddingInfo[];
-  similarities: Similarity[];
-  projection: Projection[];
-  insight: Insight;
+  modelAgreement: {
+    text: string;
+    matrix: AgreementPair[];
+    labels: string[];
+    minSimilarity: number;
+    avgSimilarity: number;
+  };
+  fullComparison: {
+    matrix: AgreementPair[];
+    labels: string[];
+    groups: string[];
+    projection: ProjectionPoint[];
+  };
+  retrieval: {
+    docModel: string;
+    queryModelCheap: string;
+    queryModelExpensive: string;
+    similarityCheap: number;
+    similarityExpensive: number;
+    qualityRetained: number;
+    costSavingsPercent: number;
+    monthlyAt1M: { symmetric: number; asymmetric: number };
+  };
+  costs: Array<{ model: string; costPerMillion: number }>;
 }
 
 function sendTelemetry(event: string, extra: Record<string, unknown> = {}) {
@@ -100,8 +98,8 @@ function sendTelemetry(event: string, extra: Record<string, unknown> = {}) {
 }
 
 export default function SharedSpacePage() {
-  const [documentText, setDocumentText] = useState('');
-  const [queryText, setQueryText] = useState('');
+  const [textA, setTextA] = useState('');
+  const [textB, setTextB] = useState('');
   const [preset, setPreset] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ApiResponse | null>(null);
@@ -111,13 +109,13 @@ export default function SharedSpacePage() {
     setPreset(value);
     const p = PRESETS.find((p) => p.label === value);
     if (p) {
-      setDocumentText(p.document);
-      setQueryText(p.query);
+      setTextA(p.textA);
+      setTextB(p.textB);
     }
   };
 
   const handleExplore = async () => {
-    if (!documentText.trim() || !queryText.trim()) return;
+    if (!textA.trim() || !textB.trim()) return;
     setLoading(true);
     setError('');
     setResult(null);
@@ -125,7 +123,7 @@ export default function SharedSpacePage() {
       const res = await fetch('/api/shared-space', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentText, queryText }),
+        body: JSON.stringify({ textA, textB }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -135,9 +133,9 @@ export default function SharedSpacePage() {
       setResult(data);
       sendTelemetry('shared_space_explore', {
         preset: preset || 'custom',
-        docLength: documentText.length,
-        queryLength: queryText.length,
-        crossModelSimilarity: data.insight.crossModelSimilarity,
+        textALength: textA.length,
+        textBLength: textB.length,
+        avgSimilarity: data.modelAgreement.avgSimilarity,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong');
@@ -149,7 +147,7 @@ export default function SharedSpacePage() {
   const handleShare = () => {
     sendTelemetry('shared_space_share', { platform: 'linkedin' });
     const text = result
-      ? `I just explored Voyage AI's shared embedding space! Cross-model similarity: ${result.insight.crossModelSimilarity.toFixed(2)} — asymmetric retrieval saves ${result.insight.savingsPercent}% on query costs. Try it yourself:`
+      ? `🔬 Just tested Voyage AI's shared embedding space.\n\nI embedded the same text with three different models (voyage-4-large, voyage-4, voyage-4-lite).\n\nCross-model similarity: ${result.modelAgreement.avgSimilarity.toFixed(2)} — they produce nearly identical vectors despite being completely different architectures.\n\nThis means: embed your documents ONCE with the best model. Query with the cheapest.\n\nSame results. 83% less cost.\n\nTry it →`
       : 'Check out the Voyage AI Shared Space Explorer — visualize how embedding models share the same vector space!';
     const url = 'https://vaicli.com/shared-space';
     window.open(
@@ -166,20 +164,18 @@ export default function SharedSpacePage() {
           Shared Space Explorer
         </Typography>
         <Typography variant="h6" sx={{ color: palette.textDim, mb: 1, fontWeight: 400 }}>
-          Embed text with 3 Voyage AI models simultaneously and see that vectors land in the same
-          semantic neighborhood.
+          Three models. One vector space. See for yourself.
         </Typography>
         <Typography sx={{ color: palette.textMuted, mb: 4, fontSize: '0.9rem', maxWidth: 800 }}>
-          Voyage AI&apos;s models share a unified embedding space — vectors from different models are directly comparable.
-          This means you can embed documents with a high-accuracy model and queries with a cheaper one, and retrieval still works.
-          Enter a document and a query below (or pick a preset) to see this in action.
+          Voyage AI&apos;s models share a unified embedding space — vectors from different models are
+          directly comparable. Enter two texts below and we&apos;ll prove it in three steps.
         </Typography>
 
         {/* Input Panel */}
         <Card sx={{ bgcolor: palette.bgSurface, mb: 4 }}>
           <CardContent sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-              <FormControl size="small" sx={{ minWidth: 180 }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>Preset</InputLabel>
                 <Select
                   value={preset}
@@ -197,12 +193,12 @@ export default function SharedSpacePage() {
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
-                  label="📄 Document Text"
+                  label="Text A"
                   multiline
                   rows={3}
                   fullWidth
-                  value={documentText}
-                  onChange={(e) => setDocumentText(e.target.value)}
+                  value={textA}
+                  onChange={(e) => setTextA(e.target.value)}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       '& fieldset': { borderColor: palette.border },
@@ -212,12 +208,12 @@ export default function SharedSpacePage() {
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField
-                  label="🔍 Query Text"
+                  label="Text B"
                   multiline
                   rows={3}
                   fullWidth
-                  value={queryText}
-                  onChange={(e) => setQueryText(e.target.value)}
+                  value={textB}
+                  onChange={(e) => setTextB(e.target.value)}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       '& fieldset': { borderColor: palette.border },
@@ -229,7 +225,7 @@ export default function SharedSpacePage() {
             <Button
               variant="contained"
               onClick={handleExplore}
-              disabled={loading || !documentText.trim() || !queryText.trim()}
+              disabled={loading || !textA.trim() || !textB.trim()}
               sx={{
                 bgcolor: palette.accent,
                 color: palette.bg,
@@ -250,57 +246,112 @@ export default function SharedSpacePage() {
 
         {/* Loading Skeleton */}
         {loading && (
-          <Grid container spacing={3}>
-            {[0, 1, 2, 3].map((i) => (
-              <Grid size={{ xs: 12, md: 6 }} key={i}>
-                <Skeleton
-                  variant="rounded"
-                  height={300}
-                  sx={{ bgcolor: palette.bgSurface }}
-                />
-              </Grid>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton
+                key={i}
+                variant="rounded"
+                height={i === 0 ? 400 : 350}
+                sx={{ bgcolor: palette.bgSurface }}
+              />
             ))}
-          </Grid>
+          </Box>
         )}
 
         {/* Results */}
         {result && !loading && (
           <>
-            <Grid container spacing={3}>
-              {/* 1. Vector Neighborhood */}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
-                      Vector Neighborhood
-                    </Typography>
-                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
-                      Each dot is a vector projected from high-dimensional space onto 2D via PCA.
-                      Documents (green) and queries (blue) from all 3 models should cluster together
-                      if they&apos;re semantically related — the grey &quot;control&quot; dot is an unrelated sentence
-                      that should sit far away. Tight clusters = strong shared space.
+            {/* Panel 1: Same Text, Different Models */}
+            <Card sx={{ bgcolor: palette.bgSurface, mb: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h5" sx={{ color: palette.accent, fontWeight: 700, mb: 0.5 }}>
+                  ① Proof: Same Text, Different Models
+                </Typography>
+                <Typography sx={{ color: palette.textDim, fontSize: '0.9rem', mb: 3 }}>
+                  We embedded Text A with all three Voyage 4 models. If they share a vector space,
+                  the vectors should be nearly identical.
+                </Typography>
+
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 7 }}>
+                    <SmallMatrix
+                      labels={result.modelAgreement.labels}
+                      pairs={result.modelAgreement.matrix}
+                      large
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 5 }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        bgcolor: 'rgba(0, 237, 100, 0.08)',
+                        border: `2px solid ${palette.accent}`,
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                      }}
+                    >
+                      <Typography sx={{ color: palette.textDim, fontSize: '1rem', mb: 1 }}>
+                        VERDICT
+                      </Typography>
+                      <Typography
+                        sx={{ color: palette.accent, fontSize: '3.5rem', fontWeight: 800, lineHeight: 1 }}
+                      >
+                        {result.modelAgreement.avgSimilarity.toFixed(3)}
+                      </Typography>
+                      <Typography sx={{ color: palette.textDim, fontSize: '1rem', mt: 1, mb: 2 }}>
+                        average cross-model similarity
+                      </Typography>
+                      <Typography sx={{ color: palette.accent, fontSize: '1.1rem', fontWeight: 600 }}>
+                        ✅ All models agree. The space is shared.
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Panel 2: Visualization */}
+            <Card sx={{ bgcolor: palette.bgSurface, mb: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h5" sx={{ color: palette.accent, fontWeight: 700, mb: 0.5 }}>
+                  ② Visualization: Three Texts, Three Models
+                </Typography>
+                <Typography sx={{ color: palette.textDim, fontSize: '0.9rem', mb: 3 }}>
+                  Now we add Text B and a control sentence. Nine vectors total. If the space is shared,
+                  they cluster by MEANING, not by MODEL.
+                </Typography>
+
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" sx={{ color: palette.textMuted, mb: 1 }}>
+                      PCA Scatter Plot (colored by text group)
                     </Typography>
                     <ScatterChart
-                      height={320}
+                      height={350}
                       series={[
                         {
-                          label: 'Document',
-                          data: result.projection
-                            .filter((p) => p.type === 'document')
+                          label: 'Text A',
+                          data: result.fullComparison.projection
+                            .filter((p) => p.group === 'Text A')
                             .map((p) => ({ x: p.x, y: p.y, id: p.label })),
                           color: palette.accent,
                         },
                         {
-                          label: 'Query',
-                          data: result.projection
-                            .filter((p) => p.type === 'query')
+                          label: 'Text B',
+                          data: result.fullComparison.projection
+                            .filter((p) => p.group === 'Text B')
                             .map((p) => ({ x: p.x, y: p.y, id: p.label })),
                           color: palette.blue,
                         },
                         {
                           label: 'Control',
-                          data: result.projection
-                            .filter((p) => p.type === 'control')
+                          data: result.fullComparison.projection
+                            .filter((p) => p.group === 'Control')
                             .map((p) => ({ x: p.x, y: p.y, id: p.label })),
                           color: palette.textMuted,
                         },
@@ -312,55 +363,111 @@ export default function SharedSpacePage() {
                         '& .MuiChartsAxis-tickLabel': { fill: palette.textDim },
                       }}
                     />
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* 2. Similarity Matrix */}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
-                      Similarity Matrix
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.75rem', mt: 1 }}>
+                      Points cluster by meaning, not by model — that&apos;s the shared space.
+                      Shape differentiation per model requires a custom renderer (future enhancement).
                     </Typography>
-                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
-                      Cosine similarity between every pair of vectors (1.0 = identical, 0 = unrelated).
-                      The highlighted cell shows the cross-model match that matters most: a document
-                      embedded with voyage-4-large vs. a query embedded with voyage-4-lite. High values
-                      here prove asymmetric retrieval works.
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <Typography variant="subtitle2" sx={{ color: palette.textMuted, mb: 1 }}>
+                      9×9 Similarity Matrix
                     </Typography>
-                    <SimilarityMatrix
-                      projection={result.projection}
-                      similarities={result.similarities}
+                    <FullMatrix
+                      labels={result.fullComparison.labels}
+                      groups={result.fullComparison.groups}
+                      pairs={result.fullComparison.matrix}
                     />
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* 3. Cost Comparison */}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
-                      Cost Comparison (per 1M tokens)
+                    <Typography sx={{ color: palette.textMuted, fontSize: '0.75rem', mt: 1 }}>
+                      Block-diagonal pattern: high within text groups (0.95+), low between (shared space confirmed).
                     </Typography>
-                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
-                      Voyage AI offers three model tiers at different price points. Since they share
-                      the same vector space, you can mix and match — use the most powerful model where
-                      accuracy matters (indexing documents) and the cheapest for high-volume operations (queries).
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
+            {/* Panel 3: So What */}
+            <Card sx={{ bgcolor: palette.bgSurface, mb: 3 }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h5" sx={{ color: palette.accent, fontWeight: 700, mb: 0.5 }}>
+                  ③ So What: The Cost Implication
+                </Typography>
+                <Typography sx={{ color: palette.textDim, fontSize: '0.9rem', mb: 3 }}>
+                  Since the models share a space, you can mix and match. Embed documents with the best.
+                  Query with the cheapest.
+                </Typography>
+
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, md: 5 }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        borderRadius: 2,
+                        bgcolor: palette.bgCard,
+                        border: `1px solid ${palette.border}`,
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ color: palette.text, mb: 2 }}>
+                        Retrieval Test
+                      </Typography>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem' }}>
+                          Doc: v4-large → Query: v4-large
+                        </Typography>
+                        <Typography sx={{ color: palette.text, fontSize: '1.1rem', fontWeight: 600 }}>
+                          Similarity: {result.retrieval.similarityExpensive.toFixed(4)}
+                        </Typography>
+                      </Box>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem' }}>
+                          Doc: v4-large → Query: v4-lite
+                        </Typography>
+                        <Typography sx={{ color: palette.text, fontSize: '1.1rem', fontWeight: 600 }}>
+                          Similarity: {result.retrieval.similarityCheap.toFixed(4)}
+                        </Typography>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          p: 2,
+                          borderRadius: 1,
+                          bgcolor: 'rgba(0, 237, 100, 0.08)',
+                          border: `1px solid ${palette.accent}`,
+                          textAlign: 'center',
+                        }}
+                      >
+                        <Typography sx={{ color: palette.textDim, fontSize: '0.85rem' }}>
+                          Quality retained
+                        </Typography>
+                        <Typography
+                          sx={{ color: palette.accent, fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.2 }}
+                        >
+                          {result.retrieval.qualityRetained.toFixed(1)}%
+                        </Typography>
+                        <Typography sx={{ color: palette.accent, fontSize: '0.9rem' }}>
+                          ✅ Nearly identical retrieval quality
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 7 }}>
+                    <Typography variant="subtitle2" sx={{ color: palette.textMuted, mb: 1 }}>
+                      Cost per 1M Tokens
                     </Typography>
                     <BarChart
-                      height={280}
+                      height={200}
                       layout="horizontal"
                       yAxis={[
                         {
                           scaleType: 'band',
-                          data: result.embeddings.map((e) => e.model.replace('voyage-', '')),
+                          data: result.costs.map((c) => c.model.replace('voyage-', '')),
                         },
                       ]}
                       series={[
                         {
-                          data: result.embeddings.map((e) => e.costPerMillion),
+                          data: result.costs.map((c) => c.costPerMillion),
                           label: 'Cost / 1M tokens ($)',
                           color: palette.accent,
                         },
@@ -374,88 +481,28 @@ export default function SharedSpacePage() {
                     />
                     <Box
                       sx={{
-                        mt: 1,
-                        p: 1.5,
+                        mt: 2,
+                        p: 2,
                         borderRadius: 1,
                         bgcolor: 'rgba(0, 237, 100, 0.08)',
                         border: `1px solid ${palette.accentDim}`,
                       }}
                     >
-                      <Typography sx={{ color: palette.accent, fontSize: '0.8rem' }}>
-                        💡 <strong>Asymmetric strategy:</strong> Use voyage-4-large for documents,
-                        voyage-4-lite for queries — same quality, {result.insight.savingsPercent}%
-                        less cost.
+                      <Typography sx={{ color: palette.accent, fontSize: '0.9rem', mb: 1 }}>
+                        💡 <strong>Asymmetric strategy:</strong> Embed docs with v4-large. Query with v4-lite.
+                        {' '}{result.retrieval.costSavingsPercent}% cheaper queries.
+                      </Typography>
+                      <Typography sx={{ color: palette.textDim, fontSize: '0.85rem' }}>
+                        At 1M queries/month: ${result.retrieval.monthlyAt1M.symmetric.toFixed(2)}/mo →{' '}
+                        <Box component="span" sx={{ color: palette.accent, fontWeight: 700 }}>
+                          ${result.retrieval.monthlyAt1M.asymmetric.toFixed(2)}/mo
+                        </Box>
                       </Typography>
                     </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* 4. Insight Card */}
-              <Grid size={{ xs: 12, md: 6 }}>
-                <Card sx={{ bgcolor: palette.bgSurface, height: '100%' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: palette.text, mb: 0.5 }}>
-                      Insight
-                    </Typography>
-                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mb: 1.5 }}>
-                      The key number: <strong>quality retained</strong> shows how much retrieval accuracy
-                      you keep when using the cheap model for queries instead of the expensive one.
-                      Values above 95% mean the asymmetric strategy is a no-brainer.
-                    </Typography>
-                    <Typography
-                      sx={{ color: palette.accent, fontSize: '2rem', fontWeight: 700, mb: 1 }}
-                    >
-                      {result.insight.crossModelSimilarity.toFixed(2)}
-                    </Typography>
-                    <Typography sx={{ color: palette.textDim, fontSize: '0.9rem', mb: 2 }}>
-                      Cross-model similarity (v4-large doc ↔ v4-lite query)
-                    </Typography>
-
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                      <InsightRow
-                        label="Same-model similarity"
-                        value={result.insight.sameModelSimilarity.toFixed(2)}
-                      />
-                      <InsightRow
-                        label="Quality retained"
-                        value={`${result.insight.qualityRetention.toFixed(1)}%`}
-                      />
-                      <InsightRow
-                        label="Query cost savings"
-                        value={`${result.insight.savingsPercent}%`}
-                        accent
-                      />
-                      <Box
-                        sx={{
-                          mt: 1,
-                          p: 2,
-                          borderRadius: 1,
-                          bgcolor: palette.bgCard,
-                          border: `1px solid ${palette.border}`,
-                        }}
-                      >
-                        <Typography sx={{ color: palette.textDim, fontSize: '0.85rem' }}>
-                          At 1M queries/month:
-                        </Typography>
-                        <Typography sx={{ color: palette.text, fontSize: '1.1rem', fontWeight: 600 }}>
-                          ${result.insight.monthlyAt1M.symmetric.toFixed(2)}/mo →{' '}
-                          <Box component="span" sx={{ color: palette.accent }}>
-                            ${result.insight.monthlyAt1M.asymmetric.toFixed(2)}/mo
-                          </Box>
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mt: 2 }}>
-                      Because Voyage AI models share the same vector space, you can embed documents
-                      with the most powerful model and queries with the cheapest — vectors remain
-                      compatible for retrieval.
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
 
             {/* Share Section */}
             <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -482,6 +529,18 @@ export default function SharedSpacePage() {
               >
                 Try vai →
               </Button>
+              <Button
+                variant="outlined"
+                href="https://github.com/mrlynn/voyageai-cli"
+                target="_blank"
+                sx={{
+                  borderColor: palette.textMuted,
+                  color: palette.textMuted,
+                  '&:hover': { borderColor: palette.textDim, bgcolor: 'rgba(136, 147, 151, 0.1)' },
+                }}
+              >
+                Star on GitHub ⭐
+              </Button>
             </Box>
           </>
         )}
@@ -490,98 +549,54 @@ export default function SharedSpacePage() {
   );
 }
 
-function InsightRow({
-  label,
-  value,
-  accent,
+/* ---------- 3×3 Matrix (Panel 1) ---------- */
+function SmallMatrix({
+  labels,
+  pairs,
+  large,
 }: {
-  label: string;
-  value: string;
-  accent?: boolean;
+  labels: string[];
+  pairs: AgreementPair[];
+  large?: boolean;
 }) {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <Typography sx={{ color: palette.textDim, fontSize: '0.9rem' }}>{label}</Typography>
-      <Typography
-        sx={{
-          color: accent ? palette.accent : palette.text,
-          fontWeight: 600,
-          fontSize: '0.95rem',
-        }}
-      >
-        {value}
-      </Typography>
-    </Box>
-  );
-}
-
-function SimilarityMatrix({
-  projection,
-  similarities,
-}: {
-  projection: Projection[];
-  similarities: Similarity[];
-}) {
-  const labels = projection.map((p) => p.label);
   const simMap = new Map<string, number>();
-  for (const s of similarities) {
-    simMap.set(`${s.a}|${s.b}`, s.similarity);
-    simMap.set(`${s.b}|${s.a}`, s.similarity);
+  for (const p of pairs) {
+    simMap.set(`${p.a}|${p.b}`, p.similarity);
+    simMap.set(`${p.b}|${p.a}`, p.similarity);
   }
-
-  const getSim = (a: string, b: string) =>
-    a === b ? 1 : simMap.get(`${a}|${b}`) ?? 0;
-
-  const colorForSim = (sim: number) => {
-    const t = Math.max(0, Math.min(1, sim));
-    const r = Math.round(0 + t * 0);
-    const g = Math.round(30 + t * (237 - 30));
-    const b = Math.round(43 + t * (100 - 43));
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
-  const isHighlight = (a: string, b: string) =>
-    (a.includes('large') && a.includes('doc') && b.includes('lite') && b.includes('query')) ||
-    (b.includes('large') && b.includes('doc') && a.includes('lite') && a.includes('query'));
+  const getSim = (a: string, b: string) => (a === b ? 1 : simMap.get(`${a}|${b}`) ?? 0);
+  const fontSize = large ? '1.5rem' : '0.75rem';
+  const headerSize = large ? '0.9rem' : '0.65rem';
 
   return (
     <Box sx={{ overflowX: 'auto' }}>
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: `80px repeat(${labels.length}, 1fr)`,
-          gap: '2px',
-          fontSize: '0.65rem',
-          minWidth: labels.length * 60 + 80,
+          gridTemplateColumns: `100px repeat(${labels.length}, 1fr)`,
+          gap: '3px',
+          minWidth: labels.length * (large ? 110 : 70) + 100,
         }}
       >
-        {/* Header row */}
         <Box />
         {labels.map((l) => (
           <Box
             key={`h-${l}`}
-            sx={{
-              color: palette.textMuted,
-              p: 0.5,
-              textAlign: 'center',
-              writingMode: 'vertical-rl',
-              transform: 'rotate(180deg)',
-              height: 80,
-            }}
+            sx={{ color: palette.textMuted, p: 1, textAlign: 'center', fontSize: headerSize, fontWeight: 600 }}
           >
             {l}
           </Box>
         ))}
-        {/* Rows */}
         {labels.map((rowLabel) => (
           <Box key={`r-${rowLabel}`} sx={{ display: 'contents' }}>
             <Box
               sx={{
                 color: palette.textMuted,
-                p: 0.5,
+                p: 1,
                 display: 'flex',
                 alignItems: 'center',
-                fontSize: '0.6rem',
+                fontSize: headerSize,
+                fontWeight: 600,
               }}
             >
               {rowLabel}
@@ -592,16 +607,104 @@ function SimilarityMatrix({
                 <Box
                   key={`${rowLabel}-${colLabel}`}
                   sx={{
-                    bgcolor: colorForSim(sim),
+                    bgcolor: simColor(sim),
                     color: sim > 0.7 ? palette.bg : palette.textDim,
-                    p: 0.5,
+                    p: large ? 2 : 0.5,
                     textAlign: 'center',
-                    borderRadius: 0.5,
+                    borderRadius: 1,
+                    fontWeight: 700,
+                    fontSize,
+                  }}
+                >
+                  {sim.toFixed(3)}
+                </Box>
+              );
+            })}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+/* ---------- 9×9 Matrix (Panel 2) ---------- */
+function FullMatrix({
+  labels,
+  groups,
+  pairs,
+}: {
+  labels: string[];
+  groups: string[];
+  pairs: AgreementPair[];
+}) {
+  const simMap = new Map<string, number>();
+  for (const p of pairs) {
+    simMap.set(`${p.a}|${p.b}`, p.similarity);
+    simMap.set(`${p.b}|${p.a}`, p.similarity);
+  }
+  const getSim = (a: string, b: string) => (a === b ? 1 : simMap.get(`${a}|${b}`) ?? 0);
+
+  // Determine if two indices are in the same group (for block-diagonal highlighting)
+  const sameGroup = (i: number, j: number) => groups[i] === groups[j];
+
+  return (
+    <Box sx={{ overflowX: 'auto' }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: `80px repeat(${labels.length}, 1fr)`,
+          gap: '1px',
+          fontSize: '0.55rem',
+          minWidth: labels.length * 48 + 80,
+        }}
+      >
+        <Box />
+        {labels.map((l) => (
+          <Box
+            key={`h-${l}`}
+            sx={{
+              color: palette.textMuted,
+              p: 0.3,
+              textAlign: 'center',
+              writingMode: 'vertical-rl',
+              transform: 'rotate(180deg)',
+              height: 70,
+              fontSize: '0.5rem',
+            }}
+          >
+            {l}
+          </Box>
+        ))}
+        {labels.map((rowLabel, ri) => (
+          <Box key={`r-${rowLabel}`} sx={{ display: 'contents' }}>
+            <Box
+              sx={{
+                color: palette.textMuted,
+                p: 0.3,
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '0.5rem',
+              }}
+            >
+              {rowLabel}
+            </Box>
+            {labels.map((colLabel, ci) => {
+              const sim = getSim(rowLabel, colLabel);
+              const inBlock = sameGroup(ri, ci);
+              return (
+                <Box
+                  key={`${rowLabel}-${colLabel}`}
+                  sx={{
+                    bgcolor: simColor(sim),
+                    color: sim > 0.7 ? palette.bg : palette.textDim,
+                    p: 0.3,
+                    textAlign: 'center',
+                    borderRadius: 0.3,
                     fontWeight: 600,
-                    fontSize: '0.65rem',
-                    border: isHighlight(rowLabel, colLabel)
-                      ? `2px solid ${palette.accent}`
-                      : '2px solid transparent',
+                    fontSize: '0.55rem',
+                    border: inBlock && ri !== ci
+                      ? `1.5px solid ${palette.accent}`
+                      : '1.5px solid transparent',
                   }}
                 >
                   {sim.toFixed(2)}
@@ -613,4 +716,28 @@ function SimilarityMatrix({
       </Box>
     </Box>
   );
+}
+
+/* ---------- Helpers ---------- */
+function simColor(sim: number): string {
+  const t = Math.max(0, Math.min(1, sim));
+  if (t >= 0.9) {
+    // Bright teal for high similarity
+    const s = (t - 0.9) / 0.1;
+    const r = Math.round(0);
+    const g = Math.round(160 + s * 77);
+    const b = Math.round(80 + s * 20);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  // Dark scale for lower values
+  const r = Math.round(0 + t * 0);
+  const g = Math.round(30 + t * 130);
+  const b = Math.round(43 + t * 57);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+interface AgreementPair {
+  a: string;
+  b: string;
+  similarity: number;
 }

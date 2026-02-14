@@ -65,13 +65,16 @@ function cosine(a: number[], b: number[]): number {
   return dot / (Math.sqrt(magA) * Math.sqrt(magB));
 }
 
+function shortName(model: string): string {
+  return model.replace('voyage-', 'v');
+}
+
 // PCA via power iteration to get top 2 components
 function pcaProject2D(vectors: number[][]): Array<{ x: number; y: number }> {
   const n = vectors.length;
   if (n === 0) return [];
   const dim = vectors[0].length;
 
-  // Center the data
   const mean = new Float64Array(dim);
   for (const v of vectors) for (let i = 0; i < dim; i++) mean[i] += v[i] / n;
   const centered = vectors.map((v) => v.map((val, i) => val - mean[i]));
@@ -87,7 +90,6 @@ function pcaProject2D(vectors: number[][]): Array<{ x: number; y: number }> {
         for (let i = 0; i < dim; i++) dot += row[i] * pc[i];
         for (let i = 0; i < dim; i++) newPc[i] += dot * row[i];
       }
-      // Deflate
       if (deflated) {
         let proj = 0;
         for (let i = 0; i < dim; i++) proj += newPc[i] * deflated[i];
@@ -135,144 +137,147 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const documentText = String(body.documentText || '').slice(0, 2000);
-    const queryText = String(body.queryText || '').slice(0, 2000);
+    const textA = String(body.textA || '').slice(0, 2000);
+    const textB = String(body.textB || '').slice(0, 2000);
 
-    if (!documentText || !queryText) {
+    if (!textA || !textB) {
       return NextResponse.json(
-        { error: 'Both documentText and queryText are required' },
+        { error: 'Both textA and textB are required' },
         { status: 400 },
       );
     }
 
-    // 6 calls for 3 models × 2 input types + 1 control call = 7 total, all parallel
-    type EmbedResult = { model: string; type: 'document' | 'query' | 'control'; embedding: number[]; tokens: number };
-
-    const calls: Promise<EmbedResult>[] = MODELS.flatMap((model) => [
-      embed(model, [documentText], 'document', apiKey).then((r) => ({
-        model,
-        type: 'document' as const,
-        embedding: r.data[0].embedding,
-        tokens: r.usage.total_tokens,
-      })),
-      embed(model, [queryText], 'query', apiKey).then((r) => ({
-        model,
-        type: 'query' as const,
-        embedding: r.data[0].embedding,
-        tokens: r.usage.total_tokens,
-      })),
-    ]);
-
-    // Control: embed with voyage-4-large as document
-    calls.push(
-      embed('voyage-4-large', [CONTROL_TEXT], 'document', apiKey).then((r) => ({
-        model: 'voyage-4-large',
-        type: 'control' as const,
-        embedding: r.data[0].embedding,
-        tokens: r.usage.total_tokens,
-      })),
+    // --- Panel 1: Same-text cross-model agreement ---
+    // Embed textA with all 3 models using input_type "document"
+    const panel1Results = await Promise.all(
+      MODELS.map((model) => embed(model, [textA], 'document', apiKey))
     );
 
-    const results = await Promise.all(calls);
-
-    // Build labeled vectors
-    interface LabeledVector {
-      label: string;
-      type: 'document' | 'query' | 'control';
-      model: string;
-      embedding: number[];
-    }
-
-    const labeled: LabeledVector[] = results.map((r) => ({
-      label:
-        r.type === 'control'
-          ? 'Control'
-          : `${r.model.replace('voyage-', 'v')} (${r.type === 'document' ? 'doc' : 'query'})`,
-      type: r.type,
-      model: r.model,
-      embedding: r.embedding,
+    // 3×3 similarity matrix
+    const panel1Vectors = MODELS.map((model, i) => ({
+      label: shortName(model),
+      vector: panel1Results[i].data[0].embedding,
     }));
 
-    // Pairwise similarities
-    const similarities: Array<{ a: string; b: string; similarity: number }> = [];
-    for (let i = 0; i < labeled.length; i++) {
-      for (let j = i + 1; j < labeled.length; j++) {
-        similarities.push({
-          a: labeled[i].label,
-          b: labeled[j].label,
-          similarity: Math.round(cosine(labeled[i].embedding, labeled[j].embedding) * 10000) / 10000,
+    const modelAgreementPairs: Array<{ a: string; b: string; similarity: number }> = [];
+    for (let i = 0; i < panel1Vectors.length; i++) {
+      for (let j = i + 1; j < panel1Vectors.length; j++) {
+        modelAgreementPairs.push({
+          a: panel1Vectors[i].label,
+          b: panel1Vectors[j].label,
+          similarity: Math.round(cosine(panel1Vectors[i].vector, panel1Vectors[j].vector) * 10000) / 10000,
+        });
+      }
+    }
+    const agreementSims = modelAgreementPairs.map((s) => s.similarity);
+
+    // --- Panel 2: Two texts + control, all models ---
+    // Embed textB and control with all 3 models (all "document" type)
+    const panel2Results = await Promise.all(
+      MODELS.flatMap((model) => [
+        embed(model, [textB], 'document', apiKey),
+        embed(model, [CONTROL_TEXT], 'document', apiKey),
+      ])
+    );
+
+    // Build 9-vector set: textA(3) + textB(3) + control(3)
+    interface LabeledVector {
+      label: string;
+      group: string;
+      model: string;
+      vector: number[];
+    }
+
+    const allVectors: LabeledVector[] = [
+      ...MODELS.map((model, i) => ({
+        label: `A: ${shortName(model)}`,
+        group: 'Text A',
+        model,
+        vector: panel1Results[i].data[0].embedding,
+      })),
+      ...MODELS.map((model, i) => ({
+        label: `B: ${shortName(model)}`,
+        group: 'Text B',
+        model,
+        vector: panel2Results[i * 2].data[0].embedding,
+      })),
+      ...MODELS.map((model, i) => ({
+        label: `Ctrl: ${shortName(model)}`,
+        group: 'Control',
+        model,
+        vector: panel2Results[i * 2 + 1].data[0].embedding,
+      })),
+    ];
+
+    // Full 9×9 similarity matrix
+    const fullMatrixPairs: Array<{ a: string; b: string; similarity: number }> = [];
+    for (let i = 0; i < allVectors.length; i++) {
+      for (let j = i + 1; j < allVectors.length; j++) {
+        fullMatrixPairs.push({
+          a: allVectors[i].label,
+          b: allVectors[j].label,
+          similarity: Math.round(cosine(allVectors[i].vector, allVectors[j].vector) * 10000) / 10000,
         });
       }
     }
 
-    // PCA projection
-    const projected = pcaProject2D(labeled.map((l) => l.embedding));
-    const projection = labeled.map((l, i) => ({
-      label: l.label,
-      type: l.type,
-      model: l.model,
+    // PCA projection for scatter plot
+    const projected = pcaProject2D(allVectors.map((v) => v.vector));
+    const projection = allVectors.map((v, i) => ({
+      label: v.label,
+      group: v.group,
+      model: v.model,
       x: Math.round(projected[i].x * 10000) / 10000,
       y: Math.round(projected[i].y * 10000) / 10000,
     }));
 
-    // Embeddings metadata (group by model)
-    const embeddingsMap = new Map<string, { docTokens: number; queryTokens: number }>();
-    for (const r of results) {
-      if (r.type === 'control') continue;
-      const existing = embeddingsMap.get(r.model) || { docTokens: 0, queryTokens: 0 };
-      if (r.type === 'document') existing.docTokens = r.tokens;
-      else existing.queryTokens = r.tokens;
-      embeddingsMap.set(r.model, existing);
-    }
+    // --- Panel 3: Retrieval proof ---
+    // Embed textA as document with v4-large (already have from panel1)
+    const docAsLarge = panel1Results[0].data[0].embedding;
 
-    const embeddings = MODELS.map((model) => {
-      const info = embeddingsMap.get(model)!;
-      const cpm = COST_PER_MILLION[model];
-      return {
-        model,
-        documentTokens: info.docTokens,
-        queryTokens: info.queryTokens,
-        costPerMillion: cpm,
-        documentCost: (info.docTokens / 1_000_000) * cpm,
-        queryCost: (info.queryTokens / 1_000_000) * cpm,
-      };
-    });
+    // Embed textB as query with v4-lite and v4-large
+    const [queryAsLite, queryAsLarge] = await Promise.all([
+      embed('voyage-4-lite', [textB], 'query', apiKey),
+      embed('voyage-4-large', [textB], 'query', apiKey),
+    ]);
 
-    // Insight metrics
-    const findSim = (a: string, b: string) =>
-      similarities.find(
-        (s) => (s.a === a && s.b === b) || (s.a === b && s.b === a),
-      )?.similarity ?? 0;
-
-    const crossModelSimilarity = findSim('v4-large (doc)', 'v4-lite (query)');
-    const sameModelSimilarity = findSim('v4-large (doc)', 'v4-large (query)');
-    const qualityRetention =
-      sameModelSimilarity > 0
-        ? Math.round((crossModelSimilarity / sameModelSimilarity) * 10000) / 100
-        : 0;
-
-    // Symmetric: voyage-4-large for both doc+query at 1M queries
-    // Asymmetric: voyage-4-large for docs, voyage-4-lite for queries
-    const symmetric = (COST_PER_MILLION['voyage-4-large'] / 1_000_000) * 1_000_000; // $0.12 per 1M
-    const asymmetric =
-      COST_PER_MILLION['voyage-4-large'] * 0 + // docs already indexed
-      (COST_PER_MILLION['voyage-4-lite'] / 1_000_000) * 1_000_000; // $0.02 per 1M queries
-    const savingsPercent = Math.round(((symmetric - asymmetric) / symmetric) * 10000) / 100;
+    const similarityCheap = Math.round(cosine(docAsLarge, queryAsLite.data[0].embedding) * 10000) / 10000;
+    const similarityExpensive = Math.round(cosine(docAsLarge, queryAsLarge.data[0].embedding) * 10000) / 10000;
+    const qualityRetained = similarityExpensive > 0
+      ? Math.round((similarityCheap / similarityExpensive) * 10000) / 100
+      : 0;
 
     return NextResponse.json({
-      embeddings,
-      similarities,
-      projection,
-      insight: {
-        crossModelSimilarity,
-        sameModelSimilarity,
-        qualityRetention,
-        savingsPercent,
+      modelAgreement: {
+        text: textA.slice(0, 100) + (textA.length > 100 ? '...' : ''),
+        matrix: modelAgreementPairs,
+        labels: panel1Vectors.map((v) => v.label),
+        minSimilarity: Math.min(...agreementSims),
+        avgSimilarity: Math.round((agreementSims.reduce((a, b) => a + b, 0) / agreementSims.length) * 10000) / 10000,
+      },
+      fullComparison: {
+        matrix: fullMatrixPairs,
+        labels: allVectors.map((v) => v.label),
+        groups: allVectors.map((v) => v.group),
+        projection,
+      },
+      retrieval: {
+        docModel: 'voyage-4-large',
+        queryModelCheap: 'voyage-4-lite',
+        queryModelExpensive: 'voyage-4-large',
+        similarityCheap,
+        similarityExpensive,
+        qualityRetained,
+        costSavingsPercent: 83.33,
         monthlyAt1M: {
-          symmetric: Math.round(symmetric * 100) / 100,
-          asymmetric: Math.round(asymmetric * 100) / 100,
+          symmetric: 0.12,
+          asymmetric: 0.02,
         },
       },
+      costs: MODELS.map((model) => ({
+        model,
+        costPerMillion: COST_PER_MILLION[model],
+      })),
     });
   } catch (error) {
     console.error('Shared space error:', error);
