@@ -52,7 +52,7 @@ export default function Footer() {
                 vai
               </Typography>
               <Chip
-                label="v1.20"
+                label="v1.30"
                 size="small"
                 sx={{
                   height: 22,

@@ -86,7 +86,7 @@ const jsonLd = {
   },
   url: 'https://vaicli.com',
   downloadUrl: 'https://github.com/mrlynn/voyageai-cli/releases',
-  softwareVersion: '1.20.0',
+  softwareVersion: '1.30.3',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

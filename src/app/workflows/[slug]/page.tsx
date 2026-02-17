@@ -163,7 +163,7 @@ export default function WorkflowDetailPage() {
         {/* Breadcrumb */}
         <Breadcrumbs sx={{ mb: 2, '& .MuiBreadcrumbs-separator': { color: palette.textMuted } }}>
           <MuiLink href="/workflows" underline="hover" sx={{ color: palette.textMuted, cursor: 'pointer' }}>
-            Workflow Store
+            Workflow Hub
           </MuiLink>
           <Typography sx={{ color: palette.text }}>{displayName}</Typography>
         </Breadcrumbs>
