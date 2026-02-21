@@ -20,6 +20,8 @@ import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { palette } from '@/theme/theme';
 import ScreenshotCard from '@/components/ScreenshotCard';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 const platforms = [
   {
@@ -104,7 +106,9 @@ const screenshots = [
 
 export default function DesktopAppPage() {
   return (
-    <Box sx={{ bgcolor: palette.bg, minHeight: '100vh', pt: 8 }}>
+    <>
+      <Navbar />
+      <Box sx={{ bgcolor: palette.bg, minHeight: '100vh', pt: 8 }}>
       {/* Hero Section */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Box sx={{ textAlign: 'center', mb: 8 }}>
@@ -460,5 +464,7 @@ export default function DesktopAppPage() {
         </Grid>
       </Container>
     </Box>
+    <Footer />
+    </>
   );
 }
