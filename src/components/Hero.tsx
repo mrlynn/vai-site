@@ -395,7 +395,7 @@ export default function Hero() {
               <>
                 <br />
                 <Box component="span" sx={{ color: palette.textMuted }}>
-                  ✓ Generated 1024-dim embedding in 142ms
+                  ✓ Model: voyage-4-large | 1024-dim | 142ms
                 </Box>
               </>
             )}

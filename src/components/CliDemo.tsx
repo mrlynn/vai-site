@@ -21,24 +21,24 @@ const workflows: Workflow[] = [
     commands: [
       { command: 'npm install -g voyageai-cli', output: '✓ Installed voyageai-cli globally' },
       { command: 'vai config set api-key YOUR_VOYAGE_API_KEY', output: '✓ API key saved securely' },
-      { command: 'vai embed "Hello, vector world!"', output: '✓ Model: voyage-3 | Dimensions: 1024 | Latency: 89ms' },
+      { command: 'vai embed "Hello, vector world!"', output: '✓ Model: voyage-4-large | Dimensions: 1024 | Latency: 89ms' },
     ],
   },
   {
     label: 'RAG Pipeline',
     commands: [
-      { command: 'vai chunk document.pdf --strategy semantic', output: '✓ Created 47 chunks from document.pdf' },
-      { command: 'vai embed chunks/*.txt --output embeddings.json', output: '✓ Embedded 47 chunks with voyage-3-large' },
-      { command: 'vai search "quarterly revenue" --db mongodb', output: '✓ Found 5 relevant chunks (0.91, 0.87, 0.85...)' },
-      { command: 'vai rerank "quarterly revenue" chunks.json --top 3', output: '✓ Reranked to [2, 1, 5] with rerank-2.5' },
+      { command: 'vai chunk document.pdf --strategy recursive', output: '✓ Created 47 chunks from document.pdf' },
+      { command: 'vai pipeline document.pdf --db mydb --collection docs', output: '✓ Chunked, embedded, and stored 47 vectors' },
+      { command: 'vai search --query "quarterly revenue" --db mydb --collection docs', output: '✓ Found 5 relevant chunks (0.91, 0.87, 0.85...)' },
+      { command: 'vai rerank --query "quarterly revenue" --documents-file chunks.json --top-k 3', output: '✓ Reranked to [2, 1, 5] with rerank-2.5' },
     ],
   },
   {
     label: 'Benchmarking',
     commands: [
-      { command: 'vai benchmark latency --models voyage-3,voyage-3-lite', output: '✓ voyage-3: 142ms | voyage-3-lite: 67ms' },
-      { command: 'vai benchmark cost --tokens 1000000', output: '✓ voyage-3: $0.06 | voyage-3-lite: $0.02 | OpenAI: $0.13' },
-      { command: 'vai compare "semantic search" "keyword search" --explain', output: '✓ Cosine: 0.72 | These concepts are related but distinct...' },
+      { command: 'vai benchmark embed --models voyage-4-large,voyage-4-lite', output: '✓ voyage-4-large: 142ms | voyage-4-lite: 67ms' },
+      { command: 'vai benchmark cost --tokens 1000000', output: '✓ voyage-4-large: $0.06 | voyage-4-lite: $0.02' },
+      { command: 'vai similarity "semantic search" "keyword search"', output: '✓ Cosine similarity: 0.72' },
     ],
   },
   {

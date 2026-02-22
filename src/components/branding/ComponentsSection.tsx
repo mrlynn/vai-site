@@ -57,7 +57,7 @@ function TerminalBlock() {
   const [copied, setCopied] = useState(false);
   const lines = [
     { prefix: '$ ', text: 'vai embed "Hello, vector world!"', color: palette.text },
-    { prefix: '', text: '✓ Model: voyage-3-large', color: palette.accent },
+    { prefix: '', text: '✓ Model: voyage-4-large', color: palette.accent },
     { prefix: '', text: '✓ Dimensions: 1024', color: palette.accent },
     { prefix: '', text: '✓ Latency: 42ms', color: palette.accent },
     { prefix: '', text: '[0.0234, -0.0891, 0.1456, ...]', color: '#40E0FF' },
