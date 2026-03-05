@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Box, Container, Typography, Link, Divider, Chip, IconButton, TextField, Button } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import XIcon from '@mui/icons-material/X';
@@ -143,44 +144,7 @@ export default function Footer() {
           </Box>
 
           {/* Newsletter signup */}
-          <Box>
-            <Typography sx={{ color: palette.text, fontWeight: 600, mb: 2, fontSize: '0.9rem' }}>
-              Stay Updated
-            </Typography>
-            <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem', mb: 2 }}>
-              Get notified about new features and releases.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
-                placeholder="your@email.com"
-                size="small"
-                sx={{
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: palette.bgCard,
-                    fontSize: '0.85rem',
-                    '& fieldset': { borderColor: palette.border },
-                    '&:hover fieldset': { borderColor: palette.accent },
-                    '&.Mui-focused fieldset': { borderColor: palette.accent },
-                  },
-                  '& .MuiInputBase-input': { color: palette.text, py: 1 },
-                }}
-              />
-              <Button
-                variant="contained"
-                size="small"
-                sx={{
-                  bgcolor: palette.accent,
-                  color: palette.bg,
-                  fontWeight: 600,
-                  px: 2,
-                  '&:hover': { bgcolor: palette.accentDim },
-                }}
-              >
-                Subscribe
-              </Button>
-            </Box>
-          </Box>
+          <FooterNewsletterSignup />
         </Box>
 
         <Divider sx={{ borderColor: palette.border, mb: 4 }} />
@@ -216,3 +180,115 @@ export default function Footer() {
     </Box>
   );
 }
+
+function FooterNewsletterSignup() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const isValidEmail = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return false;
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(trimmed);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (status === 'loading') return;
+
+    if (!isValidEmail(email)) {
+      setError('Enter a valid email address.');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'footer' }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.ok) {
+        setStatus('success');
+        setEmail('');
+      } else if (data.error === 'invalid_email') {
+        setStatus('error');
+        setError('Enter a valid email address.');
+      } else {
+        setStatus('error');
+        setError('Something went wrong. Please try again in a moment.');
+      }
+    } catch {
+      setStatus('error');
+      setError('Network error. Please try again in a moment.');
+    }
+  };
+
+  return (
+    <Box component="section" aria-label="vai newsletter signup">
+      <Typography sx={{ color: palette.text, fontWeight: 600, mb: 2, fontSize: '0.9rem' }}>
+        Stay Updated
+      </Typography>
+      <Typography sx={{ color: palette.textMuted, fontSize: '0.85rem', mb: 2 }}>
+        Get occasional deep dives on Voyage AI embeddings, MongoDB Atlas Vector Search, and new vai features.
+      </Typography>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{ display: 'flex', gap: 1 }}
+        noValidate
+      >
+        <TextField
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (status === 'error') setStatus('idle');
+            if (error) setError(null);
+          }}
+          size="small"
+          placeholder="you@example.com"
+          aria-label="Email address for the vai newsletter"
+          error={!!error}
+          helperText={error || 'Low-volume, high-signal updates. No spam.'}
+          FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.5 } }}
+          sx={{
+            flex: 1,
+            '& .MuiOutlinedInput-root': {
+              bgcolor: palette.bgCard,
+              fontSize: '0.85rem',
+              '& fieldset': { borderColor: palette.border },
+              '&:hover fieldset': { borderColor: palette.accent },
+              '&.Mui-focused fieldset': { borderColor: palette.accent },
+            },
+            '& .MuiInputBase-input': { color: palette.text, py: 1 },
+          }}
+        />
+        <Button
+          type="submit"
+          variant="contained"
+          size="small"
+          disabled={status === 'loading' || status === 'success'}
+          sx={{
+            bgcolor: palette.accent,
+            color: palette.bg,
+            fontWeight: 600,
+            px: 2,
+            whiteSpace: 'nowrap',
+            '&:hover': { bgcolor: palette.accentDim },
+          }}
+        >
+          {status === 'success' ? 'Check your email' : status === 'loading' ? 'Sending…' : 'Subscribe'}
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+

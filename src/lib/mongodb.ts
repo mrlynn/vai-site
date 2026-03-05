@@ -34,3 +34,10 @@ export async function getDb(): Promise<Db> {
   const client = await getClientPromise();
   return client.db('vai_telemetry');
 }
+
+// Default export used across the app for MongoDB access.
+// This wraps the cached client logic above so callers don't need
+// to know about the underlying connection management.
+export default async function connectDB(): Promise<Db> {
+  return getDb();
+}
