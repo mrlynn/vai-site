@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Box, Button, CircularProgress, Container, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -9,7 +9,7 @@ import { palette } from '@/theme/theme';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
-export default function NewsletterUnsubscribePage() {
+function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<Status>('idle');
   const [errorReason, setErrorReason] = useState<string | null>(null);
@@ -171,6 +171,49 @@ export default function NewsletterUnsubscribePage() {
         </Box>
       </Container>
     </Box>
+  );
+}
+
+function UnsubscribeFallback() {
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: palette.bg, display: 'flex', alignItems: 'center' }}>
+      <Container maxWidth="sm">
+        <Box
+          sx={{
+            bgcolor: palette.bgSurface,
+            borderRadius: 3,
+            border: `1px solid ${palette.border}`,
+            px: 4,
+            py: 5,
+            textAlign: 'center',
+          }}
+        >
+          <Typography
+            component="h1"
+            sx={{
+              color: palette.text,
+              fontWeight: 700,
+              mb: 3,
+              fontSize: '1.8rem',
+            }}
+          >
+            vai newsletter
+          </Typography>
+          <CircularProgress size={32} sx={{ mb: 2, color: palette.accent }} />
+          <Typography variant="h5" sx={{ color: palette.text, mb: 1, fontWeight: 600 }}>
+            Updating your preferences…
+          </Typography>
+        </Box>
+      </Container>
+    </Box>
+  );
+}
+
+export default function NewsletterUnsubscribePage() {
+  return (
+    <Suspense fallback={<UnsubscribeFallback />}>
+      <UnsubscribeContent />
+    </Suspense>
   );
 }
 
