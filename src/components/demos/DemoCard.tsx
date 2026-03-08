@@ -18,11 +18,14 @@ import {
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import Image from 'next/image';
 import { palette } from '@/theme/theme';
 import type { DemoData } from '@/data/demos';
+import UnderTheHoodPanel from '@/components/demos/UnderTheHoodPanel';
 
 interface DemoCardProps {
   demo: DemoData;
@@ -42,13 +45,20 @@ function getCapabilityChips(demo: DemoData): string[] {
 export default function DemoCard({ demo }: DemoCardProps) {
   const [imageError, setImageError] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [commandCopied, setCommandCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const capabilityChips = useMemo(() => getCapabilityChips(demo), [demo]);
   const hasPreview = !imageError;
 
   const handleCopyCommands = async () => {
     await navigator.clipboard.writeText(demo.commands.join('\n'));
     setCopied(true);
+  };
+
+  const handleCopyOneLiner = async () => {
+    await navigator.clipboard.writeText(demo.underTheHood.vaiCommand);
+    setCommandCopied(true);
   };
 
   return (
@@ -228,28 +238,88 @@ export default function DemoCard({ demo }: DemoCardProps) {
               borderRadius: 2,
               bgcolor: palette.bgSurface,
               p: 2,
-              mb: 2.5,
+              mb: 1.5,
             }}
           >
-            <Typography sx={{ color: palette.textDim, fontSize: '0.8rem', mb: 0.8 }}>
-              Exact commands included
-            </Typography>
-            <Typography
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.8 }}>
+              <TerminalIcon sx={{ fontSize: 14, color: palette.accent }} />
+              <Typography sx={{ color: palette.textDim, fontSize: '0.8rem' }}>
+                VAI command
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Typography
+                sx={{
+                  color: palette.text,
+                  fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
+                  fontSize: '0.8rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  flexGrow: 1,
+                }}
+              >
+                {demo.underTheHood.vaiCommand}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={handleCopyOneLiner}
+                sx={{
+                  color: commandCopied ? palette.accent : palette.textMuted,
+                  '&:hover': { color: palette.accent, bgcolor: 'rgba(0, 212, 170, 0.08)' },
+                }}
+              >
+                {commandCopied ? <CheckIcon sx={{ fontSize: 15 }} /> : <ContentCopyIcon sx={{ fontSize: 15 }} />}
+              </IconButton>
+            </Stack>
+          </Box>
+
+          <Box
+            onClick={() => setExpanded((value) => !value)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              cursor: 'pointer',
+              color: palette.textMuted,
+              mb: 2.5,
+              '&:hover': { color: palette.accent },
+            }}
+          >
+            <Box
               sx={{
-                color: palette.text,
-                fontFamily: "'Source Code Pro', 'SF Mono', 'Fira Code', monospace",
-                fontSize: '0.8rem',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                mb: 0.8,
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                border: `1px solid ${palette.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: expanded ? 'rgba(0, 212, 170, 0.08)' : 'transparent',
               }}
             >
-              $ {demo.commands[0]}
+              <KeyboardArrowDownIcon
+                sx={{
+                  fontSize: 16,
+                  transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s ease',
+                }}
+              />
+            </Box>
+            <Typography sx={{ fontSize: '0.76rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              {expanded ? 'Hide' : 'Show'} Under the Hood
             </Typography>
-            <Typography sx={{ color: palette.textMuted, fontSize: '0.82rem' }}>
-              {demo.commands.length} step{demo.commands.length === 1 ? '' : 's'} documented
-            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              overflow: 'hidden',
+              maxHeight: expanded ? 2200 : 0,
+              transition: 'max-height 0.35s ease',
+              mt: expanded ? 0 : -1,
+            }}
+          >
+            {expanded && <UnderTheHoodPanel underTheHood={demo.underTheHood} />}
           </Box>
 
           <Box sx={{ mt: 'auto' }}>
@@ -308,6 +378,14 @@ export default function DemoCard({ demo }: DemoCardProps) {
         autoHideDuration={1800}
         onClose={() => setCopied(false)}
         message="Copied demo commands"
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+
+      <Snackbar
+        open={commandCopied}
+        autoHideDuration={1800}
+        onClose={() => setCommandCopied(false)}
+        message="Copied VAI command"
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
 

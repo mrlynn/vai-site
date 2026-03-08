@@ -33,6 +33,36 @@ export interface DemoSocial {
   callToAction: string;
 }
 
+export type DemoCodeLanguage = 'node' | 'python' | 'curl';
+
+export interface DemoCodeBlock {
+  node?: string;
+  python?: string;
+  curl?: string;
+}
+
+export interface DemoMongoCodeBlock {
+  node: string;
+  python: string;
+}
+
+export interface DemoUnderTheHoodStep {
+  label: string;
+  code: DemoCodeBlock;
+}
+
+export interface DemoUnderTheHood {
+  vaiCommand: string;
+  voyageApi: DemoCodeBlock;
+  voyageApiSteps?: DemoUnderTheHoodStep[];
+  mongoQuery: DemoMongoCodeBlock;
+  explanations: {
+    vaiCommand: string;
+    voyageApi: string;
+    mongoQuery: string;
+  };
+}
+
 export interface DemoData {
   slug: string;
   title: string;
@@ -47,7 +77,33 @@ export interface DemoData {
   source: DemoSource;
   links: DemoLinks;
   social: DemoSocial;
+  underTheHood: DemoUnderTheHood;
 }
+
+const noMongoInThisDemo: DemoMongoCodeBlock = {
+  node: `// No MongoDB query in this demo.
+// \`vai embed\` returns the vector directly and exits.`,
+  python: `# No MongoDB query in this demo.
+# \`vai embed\` returns the vector directly and exits.`,
+};
+
+const noRemoteVoyageApiForLocalEmbed: DemoCodeBlock = {
+  node: `// No remote Voyage AI API call.
+// --local routes this command through the local voyage-4-nano bridge instead.`,
+  python: `# No remote Voyage AI API call.
+# --local routes this command through the local voyage-4-nano bridge instead.`,
+  curl: `# No remote Voyage AI API call.
+# --local routes this command through the local voyage-4-nano bridge instead.`,
+};
+
+const noRemoteVoyageApiForLocalChat: DemoCodeBlock = {
+  node: `// No remote Voyage AI API call.
+// This flow uses local embeddings plus Ollama for generation.`,
+  python: `# No remote Voyage AI API call.
+# This flow uses local embeddings plus Ollama for generation.`,
+  curl: `# No remote Voyage AI API call.
+# This flow uses local embeddings plus Ollama for generation.`,
+};
 
 const demoRegistry: DemoData[] = [
   {
@@ -96,6 +152,53 @@ const demoRegistry: DemoData[] = [
         'Reproducible VAI CLI demo: model discovery, embeddings, explainers, and similarity in one workflow. Commands + source tape included.',
       hashtags: ['vai', 'voyageai', 'mongodb', 'embeddings'],
       callToAction: 'Run it yourself and view the source tape.',
+    },
+    underTheHood: {
+      vaiCommand: 'vai embed "What is MongoDB Atlas?"',
+      voyageApi: {
+        node: `const response = await fetch('https://api.voyageai.com/v1/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    input: 'What is MongoDB Atlas?',
+    model: 'voyage-4-large',
+    input_type: 'document',
+  }),
+});
+
+const { data } = await response.json();
+console.log(data[0].embedding);`,
+        python: `import voyageai
+
+client = voyageai.Client()
+result = client.embed(
+    texts=['What is MongoDB Atlas?'],
+    model='voyage-4-large',
+    input_type='document',
+)
+
+print(result.embeddings[0])`,
+        curl: `curl https://api.voyageai.com/v1/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "input": "What is MongoDB Atlas?",
+    "model": "voyage-4-large",
+    "input_type": "document"
+  }'`,
+      },
+      mongoQuery: noMongoInThisDemo,
+      explanations: {
+        vaiCommand:
+          'This is the one-liner developers see first in the demo. VAI wraps the request, formats the response, and prints the vector without forcing you to write any client code.',
+        voyageApi:
+          'Under the hood this is a single embeddings request to Voyage AI. input_type=document is the right fit here because the text is being embedded as source content, not as a search query.',
+        mongoQuery:
+          'There is no MongoDB operation in this specific demo. The command returns the embedding directly so the focus stays on the API response and vector shape.',
+      },
     },
   },
   {
@@ -152,6 +255,25 @@ const demoRegistry: DemoData[] = [
         'Local inference demo with VAI: Ollama for generation, local embeddings for retrieval, no Voyage API key required. Commands + source tape included.',
       hashtags: ['vai', 'ollama', 'localinference', 'embeddings'],
       callToAction: 'Try the local workflow yourself and share the source tape.',
+    },
+    underTheHood: {
+      vaiCommand:
+        'vai embed "Local inference keeps retrieval private, fast, and API-key free." --local --dimensions 256',
+      voyageApi: noRemoteVoyageApiForLocalEmbed,
+      mongoQuery: {
+        node: `// No MongoDB query in this demo.
+// The command computes the embedding locally and prints it to stdout.`,
+        python: `# No MongoDB query in this demo.
+# The command computes the embedding locally and prints it to stdout.`,
+      },
+      explanations: {
+        vaiCommand:
+          'The --local flag switches the command from hosted embeddings to the local voyage-4-nano bridge. That keeps the demo private, API-key free, and fast to re-run.',
+        voyageApi:
+          'Because this flow is intentionally local, there is no outgoing Voyage AI API request. The transparency here is in making that absence explicit rather than pretending a hosted call still exists.',
+        mongoQuery:
+          'There is no MongoDB write or search in this demo. It is focused on proving that local embeddings work on their own before any storage or retrieval layer is added.',
+      },
     },
   },
   {
@@ -214,6 +336,61 @@ const demoRegistry: DemoData[] = [
         'VAI demo: local RAG chat with Ollama + nano embeddings + MongoDB Atlas. End-to-end workflow, exact commands, and source tape included.',
       hashtags: ['vai', 'rag', 'ollama', 'mongodb'],
       callToAction: 'Explore the workflow, then share the demo with your team.',
+    },
+    underTheHood: {
+      vaiCommand:
+        'vai chat --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --local --llm-provider ollama --llm-model "$OLLAMA_MODEL" --llm-base-url http://localhost:11434 --no-history --no-stream',
+      voyageApi: noRemoteVoyageApiForLocalChat,
+      mongoQuery: {
+        node: `const results = await collection.aggregate([
+  {
+    $vectorSearch: {
+      index: 'default',
+      path: 'embedding',
+      queryVector,
+      numCandidates: 40,
+      limit: 6,
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      text: 1,
+      source: 1,
+      score: { $meta: 'vectorSearchScore' },
+    },
+  },
+]).toArray();`,
+        python: `pipeline = [
+    {
+        "$vectorSearch": {
+            "index": "default",
+            "path": "embedding",
+            "queryVector": query_vector,
+            "numCandidates": 40,
+            "limit": 6,
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "text": 1,
+            "source": 1,
+            "score": {"$meta": "vectorSearchScore"},
+        }
+    },
+]
+
+results = list(collection.aggregate(pipeline))`,
+      },
+      explanations: {
+        vaiCommand:
+          'This is the high-level chat entrypoint from the GIF. VAI handles query embedding, Atlas retrieval, prompt assembly, and Ollama generation behind one command.',
+        voyageApi:
+          'This demo is intentionally local on the model side: nano handles embeddings and Ollama handles generation. The point of transparency here is showing that no hosted Voyage AI API round-trip is happening.',
+        mongoQuery:
+          'Atlas Vector Search is the retrieval layer for the chat flow. numCandidates is set higher than limit so the system can over-sample semantically similar chunks before trimming the final context that gets sent to the LLM.',
+      },
     },
   },
 ];

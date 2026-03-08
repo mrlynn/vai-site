@@ -4,14 +4,10 @@ import { useState } from 'react';
 import {
   Box,
   Button,
-  Chip,
-  IconButton,
   Snackbar,
   Stack,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
 import XIcon from '@mui/icons-material/X';
 import LinkIcon from '@mui/icons-material/Link';
@@ -48,6 +44,16 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
     setSnackbarMessage(label);
   };
 
+  const handleLinkedInShare = async () => {
+    await navigator.clipboard.writeText(linkedinPost);
+    setSnackbarMessage('Copied LinkedIn post text. Paste it into LinkedIn after the share window opens.');
+    window.open(linkedinShareUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleXShare = () => {
+    window.open(xShareUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const xShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(xPost)}`;
   const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonicalUrl)}`;
 
@@ -55,158 +61,155 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
     <>
       <Box
         sx={{
-          bgcolor: palette.bgCard,
+          bgcolor: palette.bgSurface,
           border: `1px solid ${palette.border}`,
-          borderRadius: 3,
-          p: { xs: 2.5, md: 3 },
+          borderRadius: 2.5,
+          p: { xs: 2, md: 2.25 },
         }}
       >
-        <Typography variant="h5" sx={{ color: palette.text, fontWeight: 700, mb: 1 }}>
-          Share this demo
-        </Typography>
-        <Typography sx={{ color: palette.textMuted, lineHeight: 1.65, mb: 2.5 }}>
-          Give people a ready-to-run example. Every share points back to the exact commands and source tape.
-        </Typography>
-
-        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2.5 }}>
-          {demo.social.hashtags.map((tag) => (
-            <Chip
-              key={tag}
-              label={`#${tag}`}
-              size="small"
-              sx={{
-                bgcolor: `${palette.accent}12`,
-                color: palette.accent,
-                border: `1px solid ${palette.accent}22`,
-                fontWeight: 600,
-              }}
-            />
-          ))}
-        </Stack>
-
-        <Box
-          sx={{
-            border: `1px solid ${palette.border}`,
-            borderRadius: 2,
-            bgcolor: palette.bgSurface,
-            p: 2,
-            mb: 2.5,
-          }}
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1.5}
+          justifyContent="space-between"
+          alignItems={{ xs: 'flex-start', md: 'center' }}
+          sx={{ mb: 1.5 }}
         >
-          <Typography sx={{ color: palette.text, fontWeight: 600, mb: 0.75 }}>
-            Suggested headline
-          </Typography>
-          <Typography sx={{ color: palette.textMuted, lineHeight: 1.7 }}>
-            {demo.social.headline}
-          </Typography>
-        </Box>
-
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <Box
-            sx={{
-              flex: 1,
-              border: `1px solid ${palette.border}`,
-              borderRadius: 2,
-              bgcolor: palette.bgSurface,
-              p: 2,
-            }}
-          >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-              <Typography sx={{ color: palette.text, fontWeight: 600 }}>LinkedIn post</Typography>
-              <Tooltip title="Copy LinkedIn post">
-                <IconButton
-                  size="small"
-                  onClick={() => handleCopy('Copied LinkedIn post', linkedinPost)}
-                  sx={{ color: palette.textMuted }}
-                >
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            <Typography sx={{ color: palette.textMuted, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-              {linkedinPost}
+          <Box>
+            <Typography sx={{ color: palette.text, fontWeight: 600 }}>
+              Share or copy this demo
+            </Typography>
+            <Typography sx={{ color: palette.textMuted, fontSize: '0.9rem', mt: 0.3 }}>
+              Keep it lightweight. The prepared text stays behind the buttons.
             </Typography>
           </Box>
-
-          <Box
-            sx={{
-              flex: 1,
-              border: `1px solid ${palette.border}`,
-              borderRadius: 2,
-              bgcolor: palette.bgSurface,
-              p: 2,
-            }}
-          >
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-              <Typography sx={{ color: palette.text, fontWeight: 600 }}>X post</Typography>
-              <Tooltip title="Copy X post">
-                <IconButton
-                  size="small"
-                  onClick={() => handleCopy('Copied X post', xPost)}
-                  sx={{ color: palette.textMuted }}
-                >
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-            <Typography sx={{ color: palette.textMuted, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-              {xPost}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} sx={{ mt: 2.5 }}>
-          <Button
-            variant="contained"
-            startIcon={<LinkIcon />}
-            onClick={() => handleCopy('Copied demo link', canonicalUrl)}
-            sx={{
-              bgcolor: palette.accent,
-              color: palette.bg,
-              '&:hover': { bgcolor: palette.accentLight },
-            }}
-          >
-            Copy Link
-          </Button>
-          <Button
-            variant="outlined"
-            href={linkedinShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={<LinkedInIcon />}
-            sx={{
-              color: palette.text,
-              borderColor: palette.border,
-              '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}10` },
-            }}
-          >
-            Share on LinkedIn
-          </Button>
-          <Button
-            variant="outlined"
-            href={xShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            startIcon={<XIcon />}
-            sx={{
-              color: palette.text,
-              borderColor: palette.border,
-              '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}10` },
-            }}
-          >
-            Share on X
-          </Button>
           <Button
             variant="text"
             href={canonicalUrl}
             target="_blank"
             rel="noopener noreferrer"
             endIcon={<OpenInNewIcon />}
-            sx={{ color: palette.accent, '&:hover': { bgcolor: 'transparent' } }}
+            size="small"
+            sx={{ color: palette.accent, px: 0, minWidth: 0, '&:hover': { bgcolor: 'transparent' } }}
           >
-            Open Canonical URL
+            Open canonical URL
           </Button>
         </Stack>
+
+        <Stack spacing={1.25}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+          >
+            <Typography
+              sx={{
+                color: palette.textMuted,
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                minWidth: { sm: 48 },
+              }}
+            >
+              Share
+            </Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleLinkedInShare}
+                startIcon={<LinkedInIcon />}
+                sx={{
+                  color: palette.textDim,
+                  borderColor: palette.border,
+                  px: 1.4,
+                  '&:hover': { borderColor: palette.accent, color: palette.text, bgcolor: `${palette.accent}08` },
+                }}
+              >
+                LinkedIn
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleXShare}
+                startIcon={<XIcon />}
+                sx={{
+                  color: palette.textDim,
+                  borderColor: palette.border,
+                  px: 1.4,
+                  '&:hover': { borderColor: palette.accent, color: palette.text, bgcolor: `${palette.accent}08` },
+                }}
+              >
+                X
+              </Button>
+            </Stack>
+          </Stack>
+
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+          >
+            <Typography
+              sx={{
+                color: palette.textMuted,
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                minWidth: { sm: 48 },
+              }}
+            >
+              Copy
+            </Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<LinkIcon />}
+                onClick={() => handleCopy('Copied demo link', canonicalUrl)}
+                sx={{
+                  color: palette.textDim,
+                  borderColor: palette.border,
+                  px: 1.4,
+                  '&:hover': { borderColor: palette.accent, color: palette.text, bgcolor: `${palette.accent}08` },
+                }}
+              >
+                Link
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleCopy('Copied LinkedIn post', linkedinPost)}
+                sx={{
+                  color: palette.textDim,
+                  borderColor: palette.border,
+                  px: 1.4,
+                  '&:hover': { borderColor: palette.accent, color: palette.text, bgcolor: `${palette.accent}08` },
+                }}
+              >
+                LinkedIn
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => handleCopy('Copied X post', xPost)}
+                sx={{
+                  color: palette.textDim,
+                  borderColor: palette.border,
+                  px: 1.4,
+                  '&:hover': { borderColor: palette.accent, color: palette.text, bgcolor: `${palette.accent}08` },
+                }}
+              >
+                X
+              </Button>
+            </Stack>
+          </Stack>
+        </Stack>
+
+        <Typography sx={{ color: palette.textMuted, fontSize: '0.8rem', mt: 1.5 }}>
+          LinkedIn opens the share dialog and copies the prepared text so you can paste it in quickly.
+        </Typography>
       </Box>
 
       <Snackbar

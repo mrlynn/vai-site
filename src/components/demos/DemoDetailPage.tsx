@@ -27,6 +27,7 @@ import { getRelatedDemos } from '@/data/demos';
 import CommandBlock from '@/components/use-cases/CommandBlock';
 import DemoCard from '@/components/demos/DemoCard';
 import DemoSharePanel from '@/components/demos/DemoSharePanel';
+import UnderTheHoodPanel from '@/components/demos/UnderTheHoodPanel';
 
 interface DemoDetailPageProps {
   demo: DemoData;
@@ -210,6 +211,24 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                     </Typography>
                   ))}
                 </Stack>
+              </Box>
+
+              <Box
+                sx={{
+                  bgcolor: palette.bgCard,
+                  border: `1px solid ${palette.border}`,
+                  borderRadius: 3,
+                  p: { xs: 2.5, md: 3 },
+                  mb: 4,
+                }}
+              >
+                <Typography variant="h5" sx={{ color: palette.text, fontWeight: 700, mb: 1 }}>
+                  Under the hood
+                </Typography>
+                <Typography sx={{ color: palette.textMuted, lineHeight: 1.65, mb: 2 }}>
+                  See the exact VAI command, the matching Voyage AI layer, and the MongoDB query shape behind the demo.
+                </Typography>
+                <UnderTheHoodPanel underTheHood={demo.underTheHood} showHeader={false} />
               </Box>
 
               <DemoSharePanel demo={demo} />
