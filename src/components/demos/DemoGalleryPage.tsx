@@ -119,7 +119,7 @@ export default function DemoGalleryPage() {
           >
             <Typography>{demos.length} published demos</Typography>
             <Typography>{categories.length - 1} learning paths</Typography>
-            <Typography>Source of truth: `voyageai-cli/docs/demos`</Typography>
+            <Typography>Source of truth: `voyageai-cli/docs/demos` and `docs/demos/tapes`</Typography>
           </Stack>
         </Container>
       </Box>
