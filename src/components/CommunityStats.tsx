@@ -5,19 +5,19 @@ import PublicIcon from '@mui/icons-material/Public';
 import GroupsIcon from '@mui/icons-material/Groups';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
-import WebIcon from '@mui/icons-material/Web';
 import { palette } from '@/theme/theme';
 import { useState, useEffect, useRef } from 'react';
 
 interface Stats {
   totalEvents: number;
   countries: number;
-  cities: number;
-  locations: number;
+  dataThrough: string;
   contexts: {
     cli?: number;
     web?: number;
     electron?: number;
+    desktop?: number;
+    playground?: number;
   };
 }
 
@@ -147,10 +147,10 @@ export default function CommunityStats() {
   }, []);
 
   const countries = stats?.countries || 0;
-  const cities = stats?.cities || 0;
+  const totalEvents = stats?.totalEvents || 0;
   const cliEvents = stats?.contexts?.cli || 0;
-  const webEvents = stats?.contexts?.web || 0;
-  const electronEvents = stats?.contexts?.electron || 0;
+  const webEvents = (stats?.contexts?.web || 0) + (stats?.contexts?.playground || 0);
+  const desktopEvents = (stats?.contexts?.electron || 0) + (stats?.contexts?.desktop || 0);
 
   return (
     <Box
@@ -274,22 +274,22 @@ export default function CommunityStats() {
           />
           <StatBox
             icon={<GroupsIcon sx={{ fontSize: 28 }} />}
-            value={cities}
-            label="Cities"
+            value={totalEvents}
+            label="Telemetry Events"
             color={palette.blue}
             loading={loading}
           />
           <StatBox
             icon={<TerminalIcon sx={{ fontSize: 28 }} />}
             value={cliEvents}
-            label="CLI Commands"
+            label="CLI Activity"
             color={palette.purple}
             loading={loading}
           />
           <StatBox
             icon={<DesktopWindowsIcon sx={{ fontSize: 28 }} />}
-            value={webEvents + electronEvents}
-            label="App Sessions"
+            value={webEvents + desktopEvents}
+            label="Web + Desktop Activity"
             color="#FF6B6B"
             loading={loading}
           />
@@ -324,7 +324,7 @@ export default function CommunityStats() {
               mt: 1,
             }}
           >
-            Real usage data from anonymous telemetry • Updated live
+            Delayed aggregate telemetry • Data through {stats?.dataThrough || 'the previous UTC day'}
           </Typography>
         </Box>
       </Container>

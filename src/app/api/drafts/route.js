@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDraftsCollection } from '@/lib/content/drafts';
+import { DRAFT_SORT, dedupeDrafts, getDraftsCollection } from '@/lib/content/drafts';
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
@@ -18,8 +18,8 @@ export async function GET(request) {
     }
 
     const col = await getDraftsCollection();
-    const drafts = await col.find({}).sort({ updatedAt: -1 }).toArray();
-    return NextResponse.json({ drafts });
+    const drafts = await col.find({}).sort(DRAFT_SORT).toArray();
+    return NextResponse.json({ drafts: dedupeDrafts(drafts) });
   } catch (error) {
     console.error('Drafts GET error:', error);
     const message = error instanceof Error ? error.message : String(error);

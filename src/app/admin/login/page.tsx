@@ -46,7 +46,12 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push('/admin');
+      const nextPath =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('next') || '/admin'
+          : '/admin';
+
+      router.replace(nextPath);
     } catch {
       setError('Network error. Please try again.');
     } finally {

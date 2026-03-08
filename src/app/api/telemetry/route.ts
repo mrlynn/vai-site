@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb';
+import { ensureTelemetryIndexes } from '@/lib/telemetry/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,32 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+function optionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function optionalStringArray(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const normalized = Array.from(
+    new Set(
+      value
+        .filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+        .map((entry) => entry.trim())
+    )
+  );
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function optionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -60,6 +87,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const models = optionalStringArray(body.models);
+    const modelCount = optionalNumber(body.modelCount) ?? models?.length;
 
     // Validate required fields
     if (!body.event || typeof body.event !== 'string') {
@@ -93,34 +122,47 @@ export async function POST(request: NextRequest) {
     const doc = {
       event: body.event,
       version: body.version,
-      platform: body.platform || undefined,
-      context: body.context || undefined,
-      tab: body.tab || undefined,
-      model: body.model || undefined,
-      command: body.command || undefined,
-      locale: body.locale || undefined,
+      platform: optionalString(body.platform),
+      context: optionalString(body.context),
+      tab: optionalString(body.tab),
+      model: optionalString(body.model),
+      models,
+      modelCount,
+      modelRole: optionalString(body.modelRole),
+      command: optionalString(body.command),
+      locale: optionalString(body.locale),
       // Use-case analytics fields
-      slug: body.slug || undefined,
-      queryLength: body.queryLength || undefined,
-      ctaType: body.ctaType || undefined,
-      filename: body.filename || undefined,
-      referrer: body.referrer || undefined,
-      userAgent: body.userAgent || undefined,
+      slug: optionalString(body.slug),
+      queryLength: optionalNumber(body.queryLength),
+      ctaType: optionalString(body.ctaType),
+      filename: optionalString(body.filename),
+      referrer: optionalString(body.referrer),
+      userAgent: optionalString(body.userAgent),
       // Phase 3: CLI instrumentation fields
-      rerankModel: body.rerankModel || undefined,
-      inputType: body.inputType || undefined,
-      chunkStrategy: body.chunkStrategy || undefined,
-      provider: body.provider || undefined,
-      llmModel: body.llmModel || undefined,
-      transport: body.transport || undefined,
-      workflowName: body.workflowName || undefined,
-      durationMs: typeof body.durationMs === 'number' ? body.durationMs : undefined,
-      resultCount: typeof body.resultCount === 'number' ? body.resultCount : undefined,
-      docCount: typeof body.docCount === 'number' ? body.docCount : undefined,
-      errorType: body.errorType || undefined,
-      isBuiltin: typeof body.isBuiltin === 'boolean' ? body.isBuiltin : undefined,
-      isCommunity: typeof body.isCommunity === 'boolean' ? body.isCommunity : undefined,
-      timestamp: body.timestamp || new Date().toISOString(),
+      embeddingModel: optionalString(body.embeddingModel),
+      rerankModel: optionalString(body.rerankModel),
+      llmModel: optionalString(body.llmModel),
+      queryModel: optionalString(body.queryModel),
+      docModel: optionalString(body.docModel),
+      inputType: optionalString(body.inputType),
+      chunkStrategy: optionalString(body.chunkStrategy),
+      provider: optionalString(body.provider),
+      transport: optionalString(body.transport),
+      workflowName: optionalString(body.workflowName),
+      packageName: optionalString(body.packageName),
+      format: optionalString(body.format),
+      durationMs: optionalNumber(body.durationMs),
+      resultCount: optionalNumber(body.resultCount),
+      docCount: optionalNumber(body.docCount),
+      batchSize: optionalNumber(body.batchSize),
+      chunkSize: optionalNumber(body.chunkSize),
+      turnCount: optionalNumber(body.turnCount),
+      errorType: optionalString(body.errorType),
+      local: optionalBoolean(body.local),
+      createIndex: optionalBoolean(body.createIndex),
+      isBuiltin: optionalBoolean(body.isBuiltin),
+      isCommunity: optionalBoolean(body.isCommunity),
+      timestamp: optionalString(body.timestamp) || new Date().toISOString(),
       receivedAt: new Date(),
       country,
       region,
@@ -130,7 +172,8 @@ export async function POST(request: NextRequest) {
         : {}),
     };
 
-    const db = await getDb();
+    await ensureTelemetryIndexes();
+    const db = await connectDB();
     await db.collection('events').insertOne(doc);
 
     return NextResponse.json({ ok: true }, { headers: CORS_HEADERS });

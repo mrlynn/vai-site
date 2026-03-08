@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
+import { ADMIN_SESSION_COOKIE, isValidAdminSession } from '@/lib/admin-auth';
+import connectDB from '@/lib/mongodb';
+import { ensureTelemetryIndexes } from '@/lib/telemetry/db';
+import { buildModelRefsExpression } from '@/lib/telemetry/aggregation';
 
 export const dynamic = 'force-dynamic';
 
+// Private admin analytics route.
+// This endpoint intentionally exposes richer operational detail, raw recent rows, and drilldowns
+// that are out of bounds for public telemetry consumers. Public transparency data must use a
+// separate public-safe route/read model rather than filtering or proxying this response.
+
 export async function GET(request: NextRequest) {
-  // Check API key via query param or Authorization header
   const apiKey =
     request.nextUrl.searchParams.get('API_KEY') ||
     request.headers.get('authorization')?.replace('Bearer ', '');
   const expectedKey = process.env.TELEMETRY_API_KEY;
+  const adminToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  const hasValidAdminSession = isValidAdminSession(adminToken);
+  const hasValidApiKey = Boolean(expectedKey && apiKey === expectedKey);
 
-  if (!expectedKey || apiKey !== expectedKey) {
+  if (!hasValidAdminSession && !hasValidApiKey) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -18,7 +28,8 @@ export async function GET(request: NextRequest) {
   const days = parseInt(request.nextUrl.searchParams.get('days') || '30', 10);
 
   try {
-    const db = await getDb();
+    await ensureTelemetryIndexes();
+    const db = await connectDB();
     const collection = db.collection('events');
 
     const cutoff = new Date();
@@ -70,7 +81,11 @@ export async function GET(request: NextRequest) {
       commandTiming,
       pipelineStrategies,
       modelDistribution,
+      modelBreakdown,
       modelTimeline,
+      modelRoleBreakdown,
+      modelEventBreakdown,
+      localVsRemote,
       asymmetricPairs,
       workflowRuns,
       workflowInstalls,
@@ -456,29 +471,98 @@ export async function GET(request: NextRequest) {
         ])
         .toArray(),
 
-      // modelDistribution: events with model field, grouped by model
+      // modelDistribution: all model references grouped by model
       collection
         .aggregate([
-          { $match: { ...rangeFilter, model: { $exists: true, $ne: null } } },
-          { $group: { _id: '$model', count: { $sum: 1 } } },
+          { $match: rangeFilter },
+          { $project: { refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
+          { $group: { _id: '$refs.model', count: { $sum: 1 } } },
           { $sort: { count: -1 } },
         ])
         .toArray(),
 
-      // modelTimeline: daily counts per model
+      // modelBreakdown: detailed model references for client-side filtering
       collection
         .aggregate([
-          { $match: { ...rangeFilter, model: { $exists: true, $ne: null } } },
+          { $match: rangeFilter },
+          { $project: { refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
+          {
+            $group: {
+              _id: {
+                model: '$refs.model',
+                role: '$refs.role',
+                event: '$refs.event',
+                context: '$refs.context',
+                local: '$refs.local',
+              },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // modelTimeline: daily counts per model reference
+      collection
+        .aggregate([
+          { $match: rangeFilter },
+          { $project: { receivedAt: 1, refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
           {
             $group: {
               _id: {
                 date: { $dateToString: { format: '%Y-%m-%d', date: '$receivedAt' } },
-                model: '$model',
+                model: '$refs.model',
+                role: '$refs.role',
+                event: '$refs.event',
+                context: '$refs.context',
+                local: '$refs.local',
               },
               count: { $sum: 1 },
             },
           },
           { $sort: { '_id.date': 1 } },
+        ])
+        .toArray(),
+
+      // modelRoleBreakdown: embedding vs rerank vs llm
+      collection
+        .aggregate([
+          { $match: rangeFilter },
+          { $project: { refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
+          { $group: { _id: '$refs.role', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
+
+      // modelEventBreakdown: top event/model combinations
+      collection
+        .aggregate([
+          { $match: rangeFilter },
+          { $project: { refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
+          {
+            $group: {
+              _id: { model: '$refs.model', event: '$refs.event', role: '$refs.role' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+          { $limit: 30 },
+        ])
+        .toArray(),
+
+      // localVsRemote: split model-bearing events by local flag
+      collection
+        .aggregate([
+          { $match: rangeFilter },
+          { $project: { refs: buildModelRefsExpression() } },
+          { $unwind: '$refs' },
+          { $group: { _id: '$refs.local', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
         ])
         .toArray(),
 
@@ -698,9 +782,35 @@ export async function GET(request: NextRequest) {
       },
       models: {
         modelDistribution: (modelDistribution as any[]).map((e: any) => ({ model: e._id, count: e.count })),
+        modelBreakdown: (modelBreakdown as any[]).map((e: any) => ({
+          model: e._id.model,
+          role: e._id.role,
+          event: e._id.event,
+          context: e._id.context,
+          local: Boolean(e._id.local),
+          count: e.count,
+        })),
         modelTimeline: (modelTimeline as any[]).map((e: any) => ({
           date: e._id.date,
           model: e._id.model,
+          role: e._id.role,
+          event: e._id.event,
+          context: e._id.context,
+          local: Boolean(e._id.local),
+          count: e.count,
+        })),
+        modelRoleBreakdown: (modelRoleBreakdown as any[]).map((e: any) => ({
+          role: e._id,
+          count: e.count,
+        })),
+        modelEventBreakdown: (modelEventBreakdown as any[]).map((e: any) => ({
+          model: e._id.model,
+          event: e._id.event,
+          role: e._id.role,
+          count: e.count,
+        })),
+        localVsRemote: (localVsRemote as any[]).map((e: any) => ({
+          local: Boolean(e._id),
           count: e.count,
         })),
         asymmetricPairs: (asymmetricPairs as any[]).map((e: any) => ({

@@ -35,6 +35,26 @@ interface Draft {
   updatedAt: string;
 }
 
+function getDraftTimestamp(updatedAt: string) {
+  const timestamp = Date.parse(updatedAt);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function dedupeDrafts(nextDrafts: Draft[]) {
+  const draftsById = new Map<string, Draft>();
+
+  for (const draft of nextDrafts) {
+    const existingDraft = draftsById.get(draft.id);
+    if (!existingDraft || getDraftTimestamp(draft.updatedAt) >= getDraftTimestamp(existingDraft.updatedAt)) {
+      draftsById.set(draft.id, draft);
+    }
+  }
+
+  return [...draftsById.values()].sort(
+    (left, right) => getDraftTimestamp(right.updatedAt) - getDraftTimestamp(left.updatedAt),
+  );
+}
+
 export default function AdminBuilderPage() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +91,7 @@ export default function AdminBuilderPage() {
         return;
       }
 
-      setDrafts(data.drafts || []);
+      setDrafts(dedupeDrafts(Array.isArray(data.drafts) ? data.drafts : []));
     } catch {
       setError('Network error while loading drafts.');
       setDrafts([]);
@@ -457,7 +477,7 @@ export default function AdminBuilderPage() {
                       if (!res.ok) {
                         setCreateError(data.error || 'Failed to save draft.');
                       } else {
-                        setDrafts((prev) => [data, ...prev]);
+                        setDrafts((prev) => dedupeDrafts([data, ...prev]));
                         setNewDraft({ title: '', type: 'blog-post', platform: '', body: '' });
                       }
                     } catch {

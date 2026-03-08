@@ -1,58 +1,48 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb';
+import { ensureTelemetryIndexes } from '@/lib/telemetry/db';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 300; // Cache for 5 minutes
+export const revalidate = 3600; // Temporary public counter feed; cache aggressively.
+
+// Phase 1 contract note:
+// This route is a bounded public counter feed for lightweight marketing/community surfaces.
+// It is not the future public telemetry dashboard contract, and it must remain much narrower
+// than the private admin stats route. The dedicated dashboard read model now lives on
+// GET /api/telemetry/public and should evolve independently from this lightweight feed.
 
 export async function GET() {
   try {
-    const db = await getDb();
+    await ensureTelemetryIndexes();
+    const db = await connectDB();
     const collection = db.collection('events');
+    const dataThrough = new Date();
+    dataThrough.setUTCHours(0, 0, 0, 0);
 
-    // Get high-level stats only (no sensitive data)
+    // Keep public data delayed and coarse even on this temporary feed.
+    const rangeFilter = { receivedAt: { $lt: dataThrough } };
+
     const [
       totalEvents,
       uniqueCountries,
-      uniqueCities,
       contextBreakdown,
     ] = await Promise.all([
-      // Total events all time
-      collection.countDocuments(),
+      collection.countDocuments(rangeFilter),
 
-      // Unique countries
-      collection.distinct('country', { country: { $exists: true, $ne: null } }),
+      collection.distinct('country', {
+        ...rangeFilter,
+        country: { $exists: true, $ne: null },
+      }),
 
-      // Unique cities
-      collection.distinct('city', { city: { $exists: true, $ne: null } }),
-
-      // Context breakdown (cli vs playground vs desktop)
-      collection.aggregate([
-        { $match: { context: { $exists: true } } },
-        { $group: { _id: '$context', count: { $sum: 1 } } },
-        { $sort: { count: -1 } },
-      ]).toArray(),
+      collection
+        .aggregate([
+          { $match: { ...rangeFilter, context: { $exists: true } } },
+          { $group: { _id: '$context', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ])
+        .toArray(),
     ]);
 
-    // Calculate "developers" estimate
-    // Rough heuristic: unique combinations of country+city as proxy for unique users
-    const uniqueLocations = await collection.aggregate([
-      { 
-        $match: { 
-          city: { $exists: true, $ne: null },
-          country: { $exists: true, $ne: null } 
-        } 
-      },
-      { 
-        $group: { 
-          _id: { city: '$city', country: '$country' } 
-        } 
-      },
-      { $count: 'total' }
-    ]).toArray();
-
-    const locations = uniqueLocations[0]?.total || uniqueCities.length;
-
-    // Format context breakdown
     const contexts: Record<string, number> = {};
     contextBreakdown.forEach((c) => {
       if (c._id) contexts[c._id] = c.count;
@@ -61,22 +51,16 @@ export async function GET() {
     return NextResponse.json({
       totalEvents,
       countries: uniqueCountries.length,
-      cities: uniqueCities.length,
-      locations, // Unique city+country combos
       contexts,
-      // Timestamp for freshness
-      generatedAt: new Date().toISOString(),
+      dataThrough: dataThrough.toISOString().slice(0, 10),
     });
   } catch (error) {
     console.error('Public stats error:', error);
-    // Return zeros on error so the page still renders
     return NextResponse.json({
       totalEvents: 0,
       countries: 0,
-      cities: 0,
-      locations: 0,
       contexts: {},
-      generatedAt: new Date().toISOString(),
+      dataThrough: new Date().toISOString().slice(0, 10),
       error: true,
     });
   }

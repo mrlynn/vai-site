@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ADMIN_SESSION_COOKIE } from '@/lib/admin-auth';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ ok: true });
 
-    response.cookies.set('vai_admin_token', ADMIN_TOKEN, {
+    response.cookies.set(ADMIN_SESSION_COOKIE, ADMIN_TOKEN, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

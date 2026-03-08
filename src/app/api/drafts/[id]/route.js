@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDraftsCollection } from '@/lib/content/drafts';
+import { DRAFT_SORT, getDraftsCollection } from '@/lib/content/drafts';
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
@@ -15,7 +15,7 @@ export async function GET(_request, context) {
   try {
     const { id } = await context.params;
     const col = await getDraftsCollection();
-    const draft = await col.findOne({ id });
+    const draft = await col.find({ id }).sort(DRAFT_SORT).limit(1).next();
     if (!draft) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
@@ -38,7 +38,7 @@ export async function PATCH(request, context) {
     const col = await getDraftsCollection();
 
     const now = new Date().toISOString();
-    const { value } = await col.findOneAndUpdate(
+    const result = await col.updateMany(
       { id },
       {
         $set: {
@@ -46,10 +46,9 @@ export async function PATCH(request, context) {
           updatedAt: now,
         },
       },
-      { returnDocument: 'after' }
     );
 
-    if (!value) {
+    if (!result.matchedCount) {
       // If the draft does not exist yet, create it instead of failing.
       const doc = {
         id,
@@ -67,7 +66,8 @@ export async function PATCH(request, context) {
       return NextResponse.json(doc);
     }
 
-    return NextResponse.json(value);
+    const draft = await col.find({ id }).sort(DRAFT_SORT).limit(1).next();
+    return NextResponse.json(draft);
   } catch (error) {
     console.error('Draft PATCH error:', error);
     const message = error instanceof Error ? error.message : String(error);
@@ -83,7 +83,7 @@ export async function DELETE(request, context) {
 
     const { id } = await context.params;
     const col = await getDraftsCollection();
-    const result = await col.deleteOne({ id });
+    const result = await col.deleteMany({ id });
     if (!result.deletedCount) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }

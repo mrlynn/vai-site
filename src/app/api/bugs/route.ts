@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
+import { ADMIN_SESSION_COOKIE, isValidAdminSession } from '@/lib/admin-auth';
+import {
+  BUG_PRIORITY_VALUES,
+  BUG_STATUS_VALUES,
+  buildBugDocument,
+  buildBugQuery,
+  createBugFingerprint,
+  createBugGithubIssueUrl,
+  ensureBugIndexes,
+  getPersistedBugFields,
+  normalizeOptionalString,
+  normalizeOptionalStringList,
+  validateBugReportInput,
+} from '@/lib/bugs/schema';
+import connectDB from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,16 +49,40 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+function isAuthorizedAdminRequest(request: NextRequest) {
+  const sessionToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+  if (isValidAdminSession(sessionToken)) {
+    return true;
+  }
+
+  const authHeader = request.headers.get('authorization');
+  const expectedToken = process.env.BUGS_ADMIN_TOKEN;
+  if (!expectedToken || !authHeader?.startsWith('Bearer ')) {
+    return false;
+  }
+
+  return authHeader.slice('Bearer '.length) === expectedToken;
+}
+
+function summarizeBuckets<T extends string>(items: Record<string, unknown>[], field: T) {
+  const counts = new Map<string, number>();
+
+  for (const item of items) {
+    const key = typeof item[field] === 'string' ? String(item[field]) : 'unknown';
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([key, count]) => ({ _id: key, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
 
 export async function GET(request: NextRequest) {
-  // Simple stats endpoint for admin
-  const authHeader = request.headers.get('authorization');
-  const expectedToken = process.env.BUGS_ADMIN_TOKEN;
-
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401, headers: CORS_HEADERS }
@@ -52,22 +90,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const db = await getDb();
+    const db = await connectDB();
+    await ensureBugIndexes(db);
+    const query = buildBugQuery(new URL(request.url).searchParams);
     const bugs = await db
       .collection('bugs')
-      .find({})
+      .find(query)
       .sort({ createdAt: -1 })
-      .limit(100)
+      .limit(250)
       .toArray();
 
-    const stats = await db.collection('bugs').aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-        },
-      },
-    ]).toArray();
+    const stats = {
+      status: summarizeBuckets(bugs, 'status'),
+      priority: summarizeBuckets(bugs, 'priority'),
+      source: summarizeBuckets(bugs, 'source'),
+    };
 
     return NextResponse.json({ bugs, stats }, { headers: CORS_HEADERS });
   } catch (error) {
@@ -94,18 +131,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const validation = validateBugReportInput(body);
 
-    // Validate required fields
-    if (!body.title || typeof body.title !== 'string' || body.title.trim().length < 5) {
+    if (!validation.ok) {
       return NextResponse.json(
-        { error: 'Title is required (min 5 characters)' },
-        { status: 400, headers: CORS_HEADERS }
-      );
-    }
-
-    if (!body.description || typeof body.description !== 'string' || body.description.trim().length < 10) {
-      return NextResponse.json(
-        { error: 'Description is required (min 10 characters)' },
+        { error: validation.errors[0] },
         { status: 400, headers: CORS_HEADERS }
       );
     }
@@ -114,59 +144,48 @@ export async function POST(request: NextRequest) {
     const country = request.headers.get('x-vercel-ip-country') || undefined;
     const region = request.headers.get('x-vercel-ip-country-region') || undefined;
 
-    // Build the bug document
-    const bugId = `bug_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    
-    const doc = {
-      bugId,
-      title: body.title.trim().slice(0, 200),
-      description: body.description.trim().slice(0, 5000),
-      stepsToReproduce: body.stepsToReproduce?.trim().slice(0, 2000) || null,
-      
-      // Environment
-      appVersion: body.appVersion || null,
-      cliVersion: body.cliVersion || null,
-      platform: body.platform || null,
-      arch: body.arch || null,
-      nodeVersion: body.nodeVersion || null,
-      electronVersion: body.electronVersion || null,
-      
-      // Context
-      source: body.source || 'unknown', // 'desktop-app' | 'cli' | 'web'
-      currentScreen: body.currentScreen || null,
-      currentCommand: body.currentCommand || null,
-      
-      // Error details
-      errorMessage: body.errorMessage?.slice(0, 1000) || null,
-      errorStack: body.errorStack?.slice(0, 5000) || null,
-      consoleLogs: body.consoleLogs?.slice(0, 10000) || null,
-      
-      // User info (optional)
-      email: body.email?.trim().slice(0, 200) || null,
-      
-      // Screenshot (base64 or URL, limited size)
-      screenshot: body.screenshot?.slice(0, 500000) || null, // ~500KB max
-      
-      // Metadata
-      status: 'new',
-      createdAt: new Date(),
+    const fingerprint = createBugFingerprint({
+      title: validation.normalized.title || 'unknown',
+      source: validation.normalized.source,
+      platform: validation.normalized.platform,
+      cliVersion: validation.normalized.cliVersion,
+      appVersion: validation.normalized.appVersion,
+      errorMessage: validation.normalized.errorMessage,
+    });
+
+    const { doc, bugId } = buildBugDocument(body, {
       country,
       region,
-      userAgent: request.headers.get('user-agent') || null,
-    };
+      userAgent: request.headers.get('user-agent'),
+      fingerprint,
+    });
+    doc.githubIssueUrl = createBugGithubIssueUrl(doc);
 
-    const db = await getDb();
+    const db = await connectDB();
+    await ensureBugIndexes(db);
     await db.collection('bugs').insertOne(doc);
 
-    // Generate GitHub issue URL for optional follow-up
-    const githubIssueUrl = generateGitHubIssueUrl(doc);
-
     return NextResponse.json(
-      { 
-        ok: true, 
+      {
+        ok: true,
         bugId,
         message: 'Bug report submitted successfully',
-        githubIssueUrl,
+        githubIssueUrl: doc.githubIssueUrl,
+        canonicalEndpoint: 'https://vaicli.com/api/bugs',
+        storedFields: getPersistedBugFields(doc),
+        storedBug: {
+          bugId: doc.bugId,
+          title: doc.title,
+          email: doc.email,
+          source: doc.source,
+          sessionId: doc.sessionId,
+          userId: doc.userId,
+          accountId: doc.accountId,
+          status: doc.status,
+          priority: doc.priority,
+          appVersion: doc.appVersion,
+          cliVersion: doc.cliVersion,
+        },
       },
       { headers: CORS_HEADERS }
     );
@@ -179,38 +198,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateGitHubIssueUrl(bug: Record<string, unknown>): string {
-  const title = encodeURIComponent(`[Bug] ${bug.title}`);
-  
-  const body = encodeURIComponent(`## Description
-${bug.description}
-
-## Steps to Reproduce
-${bug.stepsToReproduce || 'Not provided'}
-
-## Environment
-- **Source:** ${bug.source}
-- **App Version:** ${bug.appVersion || 'N/A'}
-- **CLI Version:** ${bug.cliVersion || 'N/A'}
-- **Platform:** ${bug.platform || 'N/A'}
-- **Arch:** ${bug.arch || 'N/A'}
-
-## Error Details
-${bug.errorMessage ? `\`\`\`\n${bug.errorMessage}\n\`\`\`` : 'No error message'}
-
----
-*Bug ID: ${bug.bugId}*
-`);
-
-  return `https://github.com/mrlynn/voyageai-cli/issues/new?title=${title}&body=${body}&labels=bug`;
-}
-
 export async function PATCH(request: NextRequest) {
-  // Auth check
-  const authHeader = request.headers.get('authorization');
-  const expectedToken = process.env.BUGS_ADMIN_TOKEN;
-
-  if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+  if (!isAuthorizedAdminRequest(request)) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401, headers: CORS_HEADERS }
@@ -219,38 +208,112 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { bugId, status } = body;
+    const bugId = normalizeOptionalString(body.bugId, 120);
 
-    if (!bugId || !status) {
+    if (!bugId) {
       return NextResponse.json(
-        { error: 'bugId and status are required' },
+        { error: 'bugId is required' },
         { status: 400, headers: CORS_HEADERS }
       );
     }
 
-    const validStatuses = ['new', 'investigating', 'resolved', 'closed', 'wontfix'];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
-        { status: 400, headers: CORS_HEADERS }
-      );
-    }
+    const db = await connectDB();
+    await ensureBugIndexes(db);
+    const bugs = db.collection('bugs');
+    const existing = await bugs.findOne({ bugId });
 
-    const db = await getDb();
-    const result = await db.collection('bugs').updateOne(
-      { bugId },
-      { $set: { status, updatedAt: new Date() } }
-    );
-
-    if (result.matchedCount === 0) {
+    if (!existing) {
       return NextResponse.json(
         { error: 'Bug not found' },
         { status: 404, headers: CORS_HEADERS }
       );
     }
 
+    const nextStatus = typeof body.status === 'string' ? body.status : null;
+    const nextPriority = typeof body.priority === 'string' ? body.priority : null;
+    const now = new Date();
+    const update: Record<string, unknown> = {
+      updatedAt: now,
+      lastActivityAt: now,
+    };
+    const errors: string[] = [];
+
+    if (nextStatus) {
+      if (!BUG_STATUS_VALUES.includes(nextStatus as (typeof BUG_STATUS_VALUES)[number])) {
+        errors.push(`Invalid status. Must be one of: ${BUG_STATUS_VALUES.join(', ')}`);
+      } else {
+        update.status = nextStatus;
+      }
+    }
+
+    if (nextPriority) {
+      if (!BUG_PRIORITY_VALUES.includes(nextPriority as (typeof BUG_PRIORITY_VALUES)[number])) {
+        errors.push(`Invalid priority. Must be one of: ${BUG_PRIORITY_VALUES.join(', ')}`);
+      } else {
+        update.priority = nextPriority;
+      }
+    }
+
+    if (body.assignee !== undefined) {
+      update.assignee = normalizeOptionalString(body.assignee, 120);
+    }
+
+    if (body.resolution !== undefined) {
+      update.resolution = normalizeOptionalString(body.resolution, 500);
+    }
+
+    if (body.githubIssueUrl !== undefined) {
+      update.githubIssueUrl = normalizeOptionalString(body.githubIssueUrl, 500);
+    }
+
+    if (body.githubIssueNumber !== undefined) {
+      update.githubIssueNumber =
+        typeof body.githubIssueNumber === 'number' && Number.isFinite(body.githubIssueNumber)
+          ? body.githubIssueNumber
+          : null;
+    }
+
+    if (body.labels !== undefined) {
+      update.labels = normalizeOptionalStringList(body.labels);
+    }
+
+    if (errors.length > 0) {
+      return NextResponse.json(
+        { error: errors[0] },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    if (Object.keys(update).length === 2) {
+      return NextResponse.json(
+        { error: 'No supported fields to update' },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const updateOperation: Record<string, unknown> = {
+      $set: update,
+    };
+
+    if (nextStatus && nextStatus !== existing.status) {
+      updateOperation.$push = {
+        statusHistory: {
+          status: nextStatus,
+          changedAt: now,
+          note: `Status changed from ${existing.status || 'unknown'} to ${nextStatus}`,
+        },
+      };
+    }
+
+    const result = await bugs.updateOne({ bugId }, updateOperation as never);
+
     return NextResponse.json(
-      { ok: true, bugId, status },
+      {
+        ok: true,
+        bugId,
+        updated: result.modifiedCount > 0,
+        update,
+      },
       { headers: CORS_HEADERS }
     );
   } catch (error) {

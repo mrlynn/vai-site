@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Container,
@@ -24,6 +25,7 @@ import {
   ToggleButtonGroup,
   IconButton,
   Tooltip,
+  MenuItem,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -43,9 +45,28 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
-import { BarChart, LineChart } from '@mui/x-charts';
+import InsightsIcon from '@mui/icons-material/Insights';
+import HubIcon from '@mui/icons-material/Hub';
+import { BarChart, LineChart, PieChart } from '@mui/x-charts';
 import dynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
+
+const DASHBOARD_TABS = [
+  'overview',
+  'commands',
+  'models',
+  'workflows',
+  'usecases',
+  'errors',
+  'game',
+] as const;
+
+const DAY_OPTIONS = ['7', '30', '90', '365'] as const;
+const MODEL_LOCAL_OPTIONS = ['all', 'local', 'remote'] as const;
+
+type DashboardTab = (typeof DASHBOARD_TABS)[number];
+type DayOption = (typeof DAY_OPTIONS)[number];
+type ModelLocalFilter = (typeof MODEL_LOCAL_OPTIONS)[number];
 
 // Lazy-load the map (SSR-unfriendly SVG library)
 const WorldMap = dynamic(() => import('@/components/WorldMap'), {
@@ -105,7 +126,26 @@ interface Stats {
   };
   models: {
     modelDistribution: { model: string; count: number }[];
-    modelTimeline: { date: string; model: string; count: number }[];
+    modelBreakdown: {
+      model: string;
+      role: string;
+      event: string;
+      context: string;
+      local: boolean;
+      count: number;
+    }[];
+    modelTimeline: {
+      date: string;
+      model: string;
+      role: string;
+      event: string;
+      context: string;
+      local: boolean;
+      count: number;
+    }[];
+    modelRoleBreakdown: { role: string; count: number }[];
+    modelEventBreakdown: { model: string; event: string; role: string; count: number }[];
+    localVsRemote: { local: boolean; count: number }[];
     asymmetricPairs: { embedModel: string; rerankModel: string; count: number }[];
   };
   workflows: {
@@ -242,55 +282,363 @@ function DataTable({
   );
 }
 
+function truncateLabel(value: unknown, max = 26) {
+  const normalized = typeof value === 'string' ? value : String(value ?? 'unknown');
+  return normalized.length > max ? `${normalized.slice(0, max)}…` : normalized;
+}
+
+function aggregateCounts<T extends string>(
+  rows: Array<{ count: number } & Record<T, string>>,
+  key: T
+) {
+  const counts = new Map<string, number>();
+  rows.forEach((row) => {
+    const bucket = row[key] || 'unknown';
+    counts.set(bucket, (counts.get(bucket) || 0) + row.count);
+  });
+
+  return Array.from(counts.entries())
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+function buildModelTimelineChart(
+  timelineRows: Stats['models']['modelTimeline'],
+  breakdownRows: Stats['models']['modelBreakdown'],
+  limit = 5
+) {
+  if (!timelineRows.length) {
+    return { dates: [] as Date[], series: [] as { label: string; data: number[]; color: string }[] };
+  }
+
+  const topModels = aggregateCounts(breakdownRows, 'model')
+    .slice(0, limit)
+    .map((row) => row.value);
+
+  const dateKeys = Array.from(new Set(timelineRows.map((point) => point.date))).sort();
+  const lookup = new Map<string, number>();
+  timelineRows.forEach((point) => {
+    const key = `${point.date}::${point.model}`;
+    lookup.set(key, (lookup.get(key) || 0) + point.count);
+  });
+
+  const chartColors = [
+    palette.accent,
+    palette.blue,
+    palette.purple,
+    palette.yellow,
+    palette.red,
+  ];
+
+  return {
+    dates: dateKeys.map((date) => new Date(date)),
+    series: topModels.map((model, index) => ({
+      label: truncateLabel(model, 22),
+      data: dateKeys.map((date) => lookup.get(`${date}::${model}`) || 0),
+      color: chartColors[index % chartColors.length],
+    })),
+  };
+}
+
+function buildRolePieData(rows: Stats['models']['modelBreakdown']) {
+  const roleColors: Record<string, string> = {
+    embedding: palette.accent,
+    rerank: palette.blue,
+    llm: palette.purple,
+  };
+
+  return aggregateCounts(rows, 'role').map((item, index) => ({
+    id: item.value || `role-${index}`,
+    value: item.count,
+    label: item.value || 'unknown',
+    color: roleColors[item.value] || palette.yellow,
+  }));
+}
+
+function buildLocalVsRemotePieData(rows: Stats['models']['modelBreakdown']) {
+  const localCount = rows
+    .filter((row) => row.local)
+    .reduce((sum, row) => sum + row.count, 0);
+  const remoteCount = rows
+    .filter((row) => !row.local)
+    .reduce((sum, row) => sum + row.count, 0);
+
+  return [
+    { id: 'local', value: localCount, label: 'Local', color: palette.accent },
+    { id: 'remote', value: remoteCount, label: 'Remote', color: palette.blue },
+  ].filter((item) => item.value > 0);
+}
+
+function normalizeQueryFilter(value: string | null, allowedValues?: string[]) {
+  if (!value || value === 'all') return 'all';
+  if (allowedValues && !allowedValues.includes(value)) return 'all';
+  return value;
+}
+
 export default function Dashboard() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isAdminTelemetryView = pathname.startsWith('/admin');
   const [apiKey, setApiKey] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [days, setDays] = useState<string>('30');
-  const [activeTab, setActiveTab] = useState<'overview' | 'commands' | 'models' | 'workflows' | 'usecases' | 'errors' | 'game'>('overview');
+  const daysParam = searchParams.get('days');
+  const tabParam = searchParams.get('tab');
+  const contextParam = searchParams.get('context');
+  const eventParam = searchParams.get('event');
+  const roleParam = searchParams.get('role');
+  const localParam = searchParams.get('local');
 
-  // Persist API key in sessionStorage
+  const days: DayOption = DAY_OPTIONS.includes(daysParam as DayOption) ? (daysParam as DayOption) : '30';
+  const activeTab: DashboardTab = DASHBOARD_TABS.includes(tabParam as DashboardTab)
+    ? (tabParam as DashboardTab)
+    : 'overview';
+  const modelContextFilter = contextParam || 'all';
+  const modelEventFilter = eventParam || 'all';
+  const modelRoleFilter = roleParam || 'all';
+  const modelLocalFilter: ModelLocalFilter = MODEL_LOCAL_OPTIONS.includes(localParam as ModelLocalFilter)
+    ? (localParam as ModelLocalFilter)
+    : 'all';
+
   useEffect(() => {
+    let cancelled = false;
     const stored = localStorage.getItem('vai_dashboard_key');
-    if (stored) {
-      setApiKey(stored);
-      setAuthenticated(true);
-    }
-  }, []);
 
-  const fetchStats = useCallback(async () => {
-    if (!apiKey) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/telemetry/stats?API_KEY=${encodeURIComponent(apiKey)}&days=${days}`);
-      if (res.status === 401) {
-        setError('Invalid API key');
-        setAuthenticated(false);
-        localStorage.removeItem('vai_dashboard_key');
+    async function bootstrapAuth() {
+      if (stored) {
+        if (!cancelled) {
+          setApiKey(stored);
+          setAuthenticated(true);
+          setAuthResolved(true);
+        }
         return;
       }
+
+      if (!isAdminTelemetryView) {
+        if (!cancelled) {
+          setAuthResolved(true);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/session', {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!cancelled && data.authenticated) {
+          setAuthenticated(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthResolved(true);
+        }
+      }
+    }
+
+    void bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminTelemetryView]);
+
+  const fetchStats = useCallback(async () => {
+    const canUseAdminSession = isAdminTelemetryView && !apiKey;
+    if (!apiKey && !canUseAdminSession) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams({ days });
+      if (apiKey) {
+        params.set('API_KEY', apiKey);
+      }
+
+      const res = await fetch(`/api/telemetry/stats?${params.toString()}`, {
+        credentials: 'same-origin',
+      });
+
+      if (res.status === 401) {
+        setError(apiKey ? 'Invalid API key' : 'Admin session expired');
+        setAuthenticated(false);
+        if (apiKey) {
+          localStorage.removeItem('vai_dashboard_key');
+        }
+        return;
+      }
+
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setStats(data);
       setAuthenticated(true);
-      localStorage.setItem('vai_dashboard_key', apiKey);
+      if (apiKey) {
+        localStorage.setItem('vai_dashboard_key', apiKey);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stats');
     } finally {
       setLoading(false);
     }
-  }, [apiKey, days]);
+  }, [apiKey, days, isAdminTelemetryView]);
 
   useEffect(() => {
-    if (authenticated && apiKey) {
+    if (authResolved && authenticated && (apiKey || isAdminTelemetryView)) {
       fetchStats();
     }
-  }, [authenticated, days]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authResolved, authenticated, days, fetchStats, apiKey, isAdminTelemetryView]);
 
-  // Login screen
+  const modelFilterOptions = useMemo(() => {
+    const rows = stats?.models?.modelBreakdown || [];
+
+    return {
+      contexts: aggregateCounts(rows, 'context').map((row) => row.value),
+      events: aggregateCounts(rows, 'event').map((row) => row.value),
+      roles: aggregateCounts(rows, 'role').map((row) => row.value),
+    };
+  }, [stats]);
+
+  const selectedModelContextFilter = useMemo(
+    () => normalizeQueryFilter(modelContextFilter, modelFilterOptions.contexts),
+    [modelContextFilter, modelFilterOptions.contexts]
+  );
+  const selectedModelEventFilter = useMemo(
+    () => normalizeQueryFilter(modelEventFilter, modelFilterOptions.events),
+    [modelEventFilter, modelFilterOptions.events]
+  );
+  const selectedModelRoleFilter = useMemo(
+    () => normalizeQueryFilter(modelRoleFilter, modelFilterOptions.roles),
+    [modelRoleFilter, modelFilterOptions.roles]
+  );
+
+  const updateDashboardQuery = useCallback(
+    (updates: Record<string, string | null>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (!value || value === 'all') {
+          params.delete(key);
+          return;
+        }
+
+        params.set(key, value);
+      });
+
+      const nextQuery = params.toString();
+      const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+      router.replace(nextUrl, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  const filteredModelBreakdown = useMemo(() => {
+    const rows = stats?.models?.modelBreakdown || [];
+
+    return rows.filter((row) => {
+      if (selectedModelContextFilter !== 'all' && row.context !== selectedModelContextFilter) return false;
+      if (selectedModelEventFilter !== 'all' && row.event !== selectedModelEventFilter) return false;
+      if (selectedModelRoleFilter !== 'all' && row.role !== selectedModelRoleFilter) return false;
+      if (modelLocalFilter === 'local' && !row.local) return false;
+      if (modelLocalFilter === 'remote' && row.local) return false;
+      return true;
+    });
+  }, [stats, selectedModelContextFilter, selectedModelEventFilter, selectedModelRoleFilter, modelLocalFilter]);
+
+  const filteredModelTimeline = useMemo(() => {
+    const rows = stats?.models?.modelTimeline || [];
+
+    return rows.filter((row) => {
+      if (selectedModelContextFilter !== 'all' && row.context !== selectedModelContextFilter) return false;
+      if (selectedModelEventFilter !== 'all' && row.event !== selectedModelEventFilter) return false;
+      if (selectedModelRoleFilter !== 'all' && row.role !== selectedModelRoleFilter) return false;
+      if (modelLocalFilter === 'local' && !row.local) return false;
+      if (modelLocalFilter === 'remote' && row.local) return false;
+      return true;
+    });
+  }, [stats, selectedModelContextFilter, selectedModelEventFilter, selectedModelRoleFilter, modelLocalFilter]);
+
+  const filteredModelDistribution = useMemo(
+    () => aggregateCounts(filteredModelBreakdown, 'model').map((row) => ({ model: row.value, count: row.count })),
+    [filteredModelBreakdown]
+  );
+
+  const filteredModelEventBreakdown = useMemo(() => {
+    const counts = new Map<string, { model: string; event: string; role: string; count: number }>();
+
+    filteredModelBreakdown.forEach((row) => {
+      const key = `${row.model}::${row.event}::${row.role}`;
+      const existing = counts.get(key);
+      if (existing) {
+        existing.count += row.count;
+        return;
+      }
+
+      counts.set(key, {
+        model: row.model,
+        event: row.event,
+        role: row.role,
+        count: row.count,
+      });
+    });
+
+    return Array.from(counts.values()).sort((a, b) => b.count - a.count);
+  }, [filteredModelBreakdown]);
+
+  const filteredAsymmetricPairs = useMemo(() => {
+    const pairs = stats?.models?.asymmetricPairs || [];
+
+    return pairs.filter((row) => {
+      if (selectedModelRoleFilter !== 'all' && selectedModelRoleFilter !== 'embedding') return false;
+      if (selectedModelEventFilter !== 'all' && selectedModelEventFilter !== 'cli_query') return false;
+      if (modelLocalFilter === 'local' && row.embedModel !== 'voyage-4-nano') return false;
+      if (modelLocalFilter === 'remote' && row.embedModel === 'voyage-4-nano') return false;
+      return true;
+    });
+  }, [stats, selectedModelRoleFilter, selectedModelEventFilter, modelLocalFilter]);
+
+  const modelTimelineChart = useMemo(
+    () => buildModelTimelineChart(filteredModelTimeline, filteredModelBreakdown),
+    [filteredModelTimeline, filteredModelBreakdown]
+  );
+  const modelRolePieData = useMemo(
+    () => buildRolePieData(filteredModelBreakdown),
+    [filteredModelBreakdown]
+  );
+  const localVsRemotePieData = useMemo(
+    () => buildLocalVsRemotePieData(filteredModelBreakdown),
+    [filteredModelBreakdown]
+  );
+  const localModelMentions = filteredModelBreakdown
+    .filter((item) => item.local)
+    .reduce((sum, item) => sum + item.count, 0);
+  const remoteModelMentions = filteredModelBreakdown
+    .filter((item) => !item.local)
+    .reduce((sum, item) => sum + item.count, 0);
+
+  if (!authResolved) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          bgcolor: palette.bg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <CircularProgress sx={{ color: palette.accent }} />
+      </Box>
+    );
+  }
+
   if (!authenticated) {
     return (
       <Box
@@ -369,7 +717,6 @@ export default function Dashboard() {
     );
   }
 
-  // Loading state
   if (loading && !stats) {
     return (
       <Box
@@ -421,7 +768,11 @@ export default function Dashboard() {
             <ToggleButtonGroup
               value={days}
               exclusive
-              onChange={(_, v) => v && setDays(v)}
+              onChange={(_, v) => {
+                if (v) {
+                  updateDashboardQuery({ days: v === '30' ? null : v });
+                }
+              }}
               size="small"
               sx={{
                 '& .MuiToggleButton-root': {
@@ -452,7 +803,11 @@ export default function Dashboard() {
           <ToggleButtonGroup
             value={activeTab}
             exclusive
-            onChange={(_, v) => v && setActiveTab(v)}
+            onChange={(_, v) => {
+              if (v) {
+                updateDashboardQuery({ tab: v === 'overview' ? null : v });
+              }
+            }}
             size="small"
             sx={{
               '& .MuiToggleButton-root': {
@@ -1160,88 +1515,473 @@ export default function Dashboard() {
 
         {stats && activeTab === 'models' && (
           <>
+            <Card
+              sx={{
+                bgcolor: palette.bgSurface,
+                border: `1px solid ${palette.border}`,
+                mb: 4,
+              }}
+            >
+              <CardContent>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    justifyContent: 'space-between',
+                    gap: 2,
+                    mb: 2,
+                    flexDirection: { xs: 'column', md: 'row' },
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Model Filters
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: palette.textMuted }}>
+                      Slice the models view by context, event family, role, and local usage.
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    onClick={() =>
+                      updateDashboardQuery({
+                        context: null,
+                        event: null,
+                        role: null,
+                        local: null,
+                      })
+                    }
+                    sx={{
+                      borderColor: palette.border,
+                      color: palette.text,
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Context"
+                      value={selectedModelContextFilter}
+                      onChange={(e) =>
+                        updateDashboardQuery({
+                          context: e.target.value === 'all' ? null : e.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="all">All contexts</MenuItem>
+                      {modelFilterOptions.contexts.map((context) => (
+                        <MenuItem key={context} value={context}>
+                          {context}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Event"
+                      value={selectedModelEventFilter}
+                      onChange={(e) =>
+                        updateDashboardQuery({
+                          event: e.target.value === 'all' ? null : e.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="all">All events</MenuItem>
+                      {modelFilterOptions.events.map((event) => (
+                        <MenuItem key={event} value={event}>
+                          {event}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Role"
+                      value={selectedModelRoleFilter}
+                      onChange={(e) =>
+                        updateDashboardQuery({
+                          role: e.target.value === 'all' ? null : e.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="all">All roles</MenuItem>
+                      {modelFilterOptions.roles.map((role) => (
+                        <MenuItem key={role} value={role}>
+                          {role}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+                    <TextField
+                      select
+                      fullWidth
+                      size="small"
+                      label="Transport"
+                      value={modelLocalFilter}
+                      onChange={(e) =>
+                        updateDashboardQuery({
+                          local: e.target.value === 'all' ? null : e.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="all">All usage</MenuItem>
+                      <MenuItem value="local">Local only</MenuItem>
+                      <MenuItem value="remote">Remote only</MenuItem>
+                    </TextField>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+
             {/* Model Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <StatCard
-                  title="Most Popular Model"
-                  value={stats.models?.modelDistribution?.[0]?.model || '—'}
+                  title="Most Mentioned Model"
+                  value={filteredModelDistribution[0]?.model || '—'}
                   icon={<ModelTrainingIcon sx={{ color: palette.accent }} />}
-                  subtitle={stats.models?.modelDistribution?.[0] ? `${stats.models.modelDistribution[0].count} uses` : undefined}
+                  subtitle={
+                    filteredModelDistribution[0]
+                      ? `${filteredModelDistribution[0].count} mentions`
+                      : undefined
+                  }
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <StatCard
-                  title="Models in Use"
-                  value={stats.models?.modelDistribution?.length || 0}
+                  title="Models Tracked"
+                  value={filteredModelDistribution.length}
                   icon={<BarChartIcon sx={{ color: palette.accent }} />}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <StatCard
-                  title="Asymmetric Retrieval Pairs"
-                  value={stats.models?.asymmetricPairs?.length || 0}
+                  title="Local Model Mentions"
+                  value={localModelMentions}
                   icon={<DevicesIcon sx={{ color: palette.accent }} />}
+                  subtitle={
+                    remoteModelMentions > 0
+                      ? `${((localModelMentions / (localModelMentions + remoteModelMentions)) * 100).toFixed(1)}% of tracked usage`
+                      : undefined
+                  }
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <StatCard
-                  title="Total Model Events"
-                  value={stats.models?.modelDistribution?.reduce((s, e) => s + e.count, 0) || 0}
+                  title="Total Model Mentions"
+                  value={filteredModelBreakdown.reduce((s, e) => s + e.count, 0)}
                   icon={<TrendingUpIcon sx={{ color: palette.accent }} />}
                 />
               </Grid>
             </Grid>
 
-            {/* Model Distribution Chart */}
-            {stats.models?.modelDistribution?.length > 0 && (
-              <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4, p: 3 }}>
+            {filteredModelBreakdown.length === 0 && (
+              <Alert severity="info" sx={{ mb: 4 }}>
+                No model telemetry matches the current filters.
+              </Alert>
+            )}
+
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {filteredModelDistribution.length > 0 && (
+                <Grid size={{ xs: 12, xl: 7 }}>
+                  <Card
+                    sx={{
+                      bgcolor: palette.bgSurface,
+                      border: `1px solid ${palette.border}`,
+                      height: '100%',
+                      p: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <ModelTrainingIcon sx={{ color: palette.accent }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Model Distribution
+                      </Typography>
+                    </Box>
+                    <Box sx={{ width: '100%', height: 320 }}>
+                      <BarChart
+                        xAxis={[
+                          {
+                            data: filteredModelDistribution
+                              .slice(0, 12)
+                              .map((e) => truncateLabel(e.model, 20)),
+                            scaleType: 'band',
+                            tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
+                          },
+                        ]}
+                        yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                        series={[
+                          {
+                            data: filteredModelDistribution.slice(0, 12).map((e) => e.count),
+                            color: palette.purple,
+                            label: 'Mentions',
+                          },
+                        ]}
+                        height={300}
+                      />
+                    </Box>
+                  </Card>
+                </Grid>
+              )}
+
+              {modelRolePieData.length > 0 && (
+                <Grid size={{ xs: 12, md: 6, xl: 2.5 }}>
+                  <Card
+                    sx={{
+                      bgcolor: palette.bgSurface,
+                      border: `1px solid ${palette.border}`,
+                      height: '100%',
+                      p: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <HubIcon sx={{ color: palette.blue }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Role Mix
+                      </Typography>
+                    </Box>
+                    <PieChart
+                      height={240}
+                      series={[
+                        {
+                          data: modelRolePieData,
+                          innerRadius: 48,
+                          outerRadius: 88,
+                          paddingAngle: 2,
+                          cornerRadius: 4,
+                        },
+                      ]}
+                      slotProps={{
+                        legend: {
+                          direction: 'vertical',
+                          position: { vertical: 'middle', horizontal: 'end' },
+                        },
+                      }}
+                    />
+                  </Card>
+                </Grid>
+              )}
+
+              {localVsRemotePieData.length > 0 && (
+                <Grid size={{ xs: 12, md: 6, xl: 2.5 }}>
+                  <Card
+                    sx={{
+                      bgcolor: palette.bgSurface,
+                      border: `1px solid ${palette.border}`,
+                      height: '100%',
+                      p: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <DevicesIcon sx={{ color: palette.accent }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Local vs Remote
+                      </Typography>
+                    </Box>
+                    <PieChart
+                      height={240}
+                      series={[
+                        {
+                          data: localVsRemotePieData,
+                          innerRadius: 48,
+                          outerRadius: 88,
+                          paddingAngle: 2,
+                          cornerRadius: 4,
+                        },
+                      ]}
+                      slotProps={{
+                        legend: {
+                          direction: 'vertical',
+                          position: { vertical: 'middle', horizontal: 'end' },
+                        },
+                      }}
+                    />
+                  </Card>
+                </Grid>
+              )}
+            </Grid>
+
+            {modelTimelineChart.series.length > 0 && (
+              <Card
+                sx={{
+                  bgcolor: palette.bgSurface,
+                  border: `1px solid ${palette.border}`,
+                  mb: 4,
+                  p: 3,
+                }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <ModelTrainingIcon sx={{ color: palette.accent }} />
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Model Distribution</Typography>
+                  <InsightsIcon sx={{ color: palette.accent }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Model Usage Over Time
+                  </Typography>
                 </Box>
-                <Box sx={{ width: '100%', height: 300 }}>
-                  <BarChart
-                    xAxis={[{
-                      data: stats.models.modelDistribution.slice(0, 15).map((e) => e.model.length > 20 ? e.model.slice(0, 20) + '…' : e.model),
-                      scaleType: 'band',
-                      tickLabelStyle: { fill: palette.textMuted, fontSize: 10, angle: -30 },
-                    }]}
+                <Box sx={{ width: '100%', height: 320 }}>
+                  <LineChart
+                    xAxis={[
+                      {
+                        data: modelTimelineChart.dates,
+                        scaleType: 'time',
+                        tickLabelStyle: { fill: palette.textMuted, fontSize: 11 },
+                      },
+                    ]}
                     yAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
-                    series={[{ data: stats.models.modelDistribution.slice(0, 15).map((e) => e.count), color: palette.purple }]}
-                    height={280}
+                    series={modelTimelineChart.series.map((series) => ({
+                      data: series.data,
+                      label: series.label,
+                      color: series.color,
+                      showMark: false,
+                    }))}
+                    height={300}
+                    slotProps={{
+                      legend: {
+                        direction: 'horizontal',
+                        position: { vertical: 'top', horizontal: 'center' },
+                      },
+                    }}
                   />
                 </Box>
               </Card>
             )}
 
-            {/* Asymmetric Pairs Table */}
-            {stats.models?.asymmetricPairs?.length > 0 && (
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              {filteredModelEventBreakdown.length > 0 && (
+                <Grid size={{ xs: 12, lg: 7 }}>
+                  <Card
+                    sx={{
+                      bgcolor: palette.bgSurface,
+                      border: `1px solid ${palette.border}`,
+                      height: '100%',
+                      p: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                      <BarChartIcon sx={{ color: palette.blue }} />
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Top Model and Event Combinations
+                      </Typography>
+                    </Box>
+                    <Box sx={{ width: '100%', height: 340 }}>
+                      <BarChart
+                        layout="horizontal"
+                        yAxis={[
+                          {
+                            data: filteredModelEventBreakdown
+                              .slice(0, 10)
+                              .map((row) =>
+                                truncateLabel(
+                                  `${String(row.model ?? 'unknown')} · ${String(row.event ?? 'unknown').replace(/^cli_/, '')}`,
+                                  32
+                                )
+                              ),
+                            scaleType: 'band',
+                            tickLabelStyle: { fill: palette.textMuted, fontSize: 10 },
+                          },
+                        ]}
+                        xAxis={[{ tickLabelStyle: { fill: palette.textMuted, fontSize: 11 } }]}
+                        series={[
+                          {
+                            data: filteredModelEventBreakdown.slice(0, 10).map((row) => row.count),
+                            color: palette.blue,
+                            label: 'Mentions',
+                          },
+                        ]}
+                        height={320}
+                      />
+                    </Box>
+                  </Card>
+                </Grid>
+              )}
+
+              {filteredModelEventBreakdown.length > 0 && (
+                <Grid size={{ xs: 12, lg: 5 }}>
+                  <DataTable
+                    title="Top Model / Event Rows"
+                    icon={<HubIcon sx={{ color: palette.purple, fontSize: 20 }} />}
+                    rows={filteredModelEventBreakdown.slice(0, 12).map((row) => ({
+                      label: `${truncateLabel(row.model, 16)} · ${String(row.event ?? 'unknown').replace(/^cli_/, '')}`,
+                      count: row.count,
+                    }))}
+                    labelKey="label"
+                    valueKey="count"
+                    maxRows={12}
+                  />
+                </Grid>
+              )}
+            </Grid>
+
+            {filteredAsymmetricPairs.length > 0 && (
               <Card sx={{ bgcolor: palette.bgSurface, border: `1px solid ${palette.border}`, mb: 4 }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     <DevicesIcon sx={{ color: palette.blue, fontSize: 20 }} />
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Asymmetric Retrieval Pairs</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Asymmetric Retrieval Pairs
+                    </Typography>
                   </Box>
                   <TableContainer>
                     <Table size="small">
                       <TableHead>
                         <TableRow>
-                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>Embed Model</TableCell>
-                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>Rerank Model</TableCell>
-                          <TableCell align="right" sx={{ color: palette.textMuted, borderColor: palette.border }}>Count</TableCell>
+                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>
+                            Embed Model
+                          </TableCell>
+                          <TableCell sx={{ color: palette.textMuted, borderColor: palette.border }}>
+                            Rerank Model
+                          </TableCell>
+                          <TableCell
+                            align="right"
+                            sx={{ color: palette.textMuted, borderColor: palette.border }}
+                          >
+                            Count
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {stats.models.asymmetricPairs.slice(0, 15).map((row, i) => (
+                        {filteredAsymmetricPairs.slice(0, 15).map((row, i) => (
                           <TableRow key={i}>
                             <TableCell sx={{ borderColor: palette.border }}>
-                              <Chip label={row.embedModel} size="small" sx={{ bgcolor: 'rgba(0, 212, 170, 0.08)', color: palette.accent, fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                              <Chip
+                                label={row.embedModel}
+                                size="small"
+                                sx={{
+                                  bgcolor: 'rgba(0, 212, 170, 0.08)',
+                                  color: palette.accent,
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.75rem',
+                                }}
+                              />
                             </TableCell>
                             <TableCell sx={{ borderColor: palette.border }}>
-                              <Chip label={row.rerankModel} size="small" sx={{ bgcolor: 'rgba(102, 126, 234, 0.1)', color: palette.blue, fontFamily: 'monospace', fontSize: '0.75rem' }} />
+                              <Chip
+                                label={row.rerankModel}
+                                size="small"
+                                sx={{
+                                  bgcolor: 'rgba(102, 126, 234, 0.1)',
+                                  color: palette.blue,
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.75rem',
+                                }}
+                              />
                             </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600, borderColor: palette.border }}>{row.count.toLocaleString()}</TableCell>
+                            <TableCell
+                              align="right"
+                              sx={{ fontWeight: 600, borderColor: palette.border }}
+                            >
+                              {row.count.toLocaleString()}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

@@ -1,461 +1,831 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
   Box,
-  Container,
-  Typography,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
-  IconButton,
   TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Alert,
-  CircularProgress,
   Tooltip,
-  InputAdornment,
+  Typography,
 } from '@mui/material';
-import {
-  Refresh as RefreshIcon,
-  OpenInNew as OpenInNewIcon,
-  Visibility as ViewIcon,
-  GitHub as GitHubIcon,
-  Lock as LockIcon,
-} from '@mui/icons-material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SaveIcon from '@mui/icons-material/Save';
+import { palette } from '@/theme/theme';
+
+type BugStatus = 'new' | 'investigating' | 'resolved' | 'closed' | 'wontfix';
+type BugPriority = 'low' | 'medium' | 'high' | 'critical';
 
 interface Bug {
   _id: string;
   bugId: string;
   title: string;
   description: string;
-  stepsToReproduce?: string;
-  status: 'new' | 'investigating' | 'resolved' | 'closed' | 'wontfix';
+  stepsToReproduce?: string | null;
+  status: BugStatus;
+  priority: BugPriority;
   source: string;
-  platform?: string;
-  cliVersion?: string;
-  appVersion?: string;
-  email?: string;
-  errorMessage?: string;
-  errorStack?: string;
-  country?: string;
+  platform?: string | null;
+  cliVersion?: string | null;
+  appVersion?: string | null;
+  arch?: string | null;
+  nodeVersion?: string | null;
+  electronVersion?: string | null;
+  email?: string | null;
+  userId?: string | null;
+  accountId?: string | null;
+  sessionId?: string | null;
+  currentScreen?: string | null;
+  currentCommand?: string | null;
+  currentUrl?: string | null;
+  errorMessage?: string | null;
+  errorStack?: string | null;
+  consoleLogs?: string | null;
+  githubIssueUrl?: string | null;
+  githubIssueNumber?: number | null;
+  assignee?: string | null;
+  labels?: string[];
+  resolution?: string | null;
+  fingerprint?: string | null;
+  country?: string | null;
+  region?: string | null;
   createdAt: string;
+  updatedAt?: string | null;
+  lastActivityAt?: string | null;
 }
 
-const STATUS_COLORS: Record<string, 'error' | 'warning' | 'info' | 'success' | 'default'> = {
-  new: 'error',
-  investigating: 'warning',
-  resolved: 'success',
-  closed: 'default',
-  wontfix: 'default',
+interface StatBucket {
+  _id: string;
+  count: number;
+}
+
+interface TriageDraft {
+  status: BugStatus;
+  priority: BugPriority;
+  assignee: string;
+  labels: string;
+  githubIssueUrl: string;
+  githubIssueNumber: string;
+  resolution: string;
+}
+
+const STATUS_OPTIONS: BugStatus[] = ['new', 'investigating', 'resolved', 'closed', 'wontfix'];
+const PRIORITY_OPTIONS: BugPriority[] = ['low', 'medium', 'high', 'critical'];
+
+const STATUS_COLORS: Record<BugStatus, string> = {
+  new: palette.red,
+  investigating: palette.yellow,
+  resolved: palette.accent,
+  closed: palette.textMuted,
+  wontfix: palette.purple,
 };
+
+const PRIORITY_COLORS: Record<BugPriority, string> = {
+  low: palette.textMuted,
+  medium: palette.blue,
+  high: palette.yellow,
+  critical: palette.red,
+};
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return 'N/A';
+  }
+
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function defaultDraft(bug: Bug): TriageDraft {
+  return {
+    status: bug.status,
+    priority: bug.priority || 'medium',
+    assignee: bug.assignee || '',
+    labels: (bug.labels || []).join(', '),
+    githubIssueUrl: bug.githubIssueUrl || '',
+    githubIssueNumber: bug.githubIssueNumber ? String(bug.githubIssueNumber) : '',
+    resolution: bug.resolution || '',
+  };
+}
+
+function fallbackGitHubUrl(bug: Bug) {
+  const title = encodeURIComponent(`[Bug] ${bug.title}`);
+  const body = encodeURIComponent(`## Description
+${bug.description}
+
+## Steps to Reproduce
+${bug.stepsToReproduce || 'Not provided'}
+
+## Environment
+- Source: ${bug.source}
+- Platform: ${bug.platform || 'N/A'}
+- CLI Version: ${bug.cliVersion || 'N/A'}
+- App Version: ${bug.appVersion || 'N/A'}
+
+---
+*Bug ID: ${bug.bugId}*`);
+  return `https://github.com/mrlynn/voyageai-cli/issues/new?title=${title}&body=${body}&labels=bug`;
+}
 
 export default function BugsAdminPage() {
   const [bugs, setBugs] = useState<Bug[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [token, setToken] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
   const [selectedBug, setSelectedBug] = useState<Bug | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [stats, setStats] = useState<{ _id: string; count: number }[]>([]);
+  const [triageDraft, setTriageDraft] = useState<TriageDraft | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
+  const [platformFilter, setPlatformFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [versionFilter, setVersionFilter] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [stats, setStats] = useState<{
+    status: StatBucket[];
+    priority: StatBucket[];
+    source: StatBucket[];
+  }>({
+    status: [],
+    priority: [],
+    source: [],
+  });
 
-  const fetchBugs = useCallback(async () => {
-    if (!token) return;
-    
+  const loadBugs = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const res = await fetch('/api/bugs', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (res.status === 401) {
-        setAuthenticated(false);
-        setError('Invalid token');
+      const res = await fetch('/api/bugs', { cache: 'no-store' });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to load bugs.');
+        setBugs([]);
         return;
       }
-      
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      
-      const data = await res.json();
+
       setBugs(data.bugs || []);
-      setStats(data.stats || []);
-      setAuthenticated(true);
-      
-      // Save token to localStorage
-      localStorage.setItem('vai_bugs_token', token);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch bugs');
+      setStats(
+        data.stats || {
+          status: [],
+          priority: [],
+          source: [],
+        }
+      );
+    } catch {
+      setError('Network error while loading bug reports.');
+      setBugs([]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  // Load token from localStorage on mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('vai_bugs_token');
-    if (savedToken) {
-      setToken(savedToken);
-    }
   }, []);
 
-  // Auto-fetch when token changes
   useEffect(() => {
-    if (token && !authenticated) {
-      fetchBugs();
-    }
-  }, [token, authenticated, fetchBugs]);
+    void loadBugs();
+  }, [loadBugs]);
 
-  const updateBugStatus = async (bugId: string, newStatus: string) => {
-    try {
+  const sourceOptions = useMemo(
+    () => Array.from(new Set(bugs.map((bug) => bug.source).filter(Boolean))).sort(),
+    [bugs]
+  );
+  const platformOptions = useMemo(
+    () => Array.from(new Set(bugs.map((bug) => bug.platform).filter(Boolean) as string[])).sort(),
+    [bugs]
+  );
+  const versionOptions = useMemo(() => {
+    const values = bugs.flatMap((bug) => [bug.appVersion, bug.cliVersion]).filter(Boolean) as string[];
+    return Array.from(new Set(values)).sort().reverse();
+  }, [bugs]);
+
+  const filteredBugs = useMemo(() => {
+    return bugs.filter((bug) => {
+      const query = search.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        [
+          bug.bugId,
+          bug.title,
+          bug.description,
+          bug.email,
+          bug.errorMessage,
+          bug.userId,
+          bug.accountId,
+          bug.currentCommand,
+          bug.currentScreen,
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(query));
+
+      const matchesStatus = statusFilter === 'all' || bug.status === statusFilter;
+      const matchesSource = sourceFilter === 'all' || bug.source === sourceFilter;
+      const matchesPlatform = platformFilter === 'all' || bug.platform === platformFilter;
+      const matchesPriority = priorityFilter === 'all' || bug.priority === priorityFilter;
+      const matchesVersion =
+        versionFilter === 'all' || bug.appVersion === versionFilter || bug.cliVersion === versionFilter;
+      const matchesFromDate =
+        !fromDate || new Date(bug.createdAt).getTime() >= new Date(`${fromDate}T00:00:00`).getTime();
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesSource &&
+        matchesPlatform &&
+        matchesPriority &&
+        matchesVersion &&
+        matchesFromDate
+      );
+    });
+  }, [bugs, fromDate, platformFilter, priorityFilter, search, sourceFilter, statusFilter, versionFilter]);
+
+  const updateBugInState = useCallback((bugId: string, patch: Partial<Bug>) => {
+    setBugs((current) => current.map((bug) => (bug.bugId === bugId ? { ...bug, ...patch } : bug)));
+    setSelectedBug((current) => (current && current.bugId === bugId ? { ...current, ...patch } : current));
+  }, []);
+
+  const patchBug = useCallback(
+    async (bugId: string, patch: Record<string, unknown>) => {
       const res = await fetch('/api/bugs', {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ bugId, status: newStatus }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bugId, ...patch }),
       });
-      
-      if (res.ok) {
-        setBugs(bugs.map(b => b.bugId === bugId ? { ...b, status: newStatus as Bug['status'] } : b));
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update bug.');
       }
+
+      updateBugInState(bugId, patch as Partial<Bug>);
+      return data;
+    },
+    [updateBugInState]
+  );
+
+  const saveTriage = async () => {
+    if (!selectedBug || !triageDraft) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      const patch = {
+        status: triageDraft.status,
+        priority: triageDraft.priority,
+        assignee: triageDraft.assignee || null,
+        labels: triageDraft.labels
+          .split(',')
+          .map((label) => label.trim())
+          .filter(Boolean),
+        githubIssueUrl: triageDraft.githubIssueUrl || null,
+        githubIssueNumber: triageDraft.githubIssueNumber
+          ? Number(triageDraft.githubIssueNumber)
+          : null,
+        resolution: triageDraft.resolution || null,
+      };
+
+      await patchBug(selectedBug.bugId, patch);
+      await loadBugs();
     } catch (err) {
-      console.error('Failed to update status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save triage changes.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const filteredBugs = statusFilter === 'all' 
-    ? bugs 
-    : bugs.filter(b => b.status === statusFilter);
-
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const generateGitHubUrl = (bug: Bug) => {
-    const title = encodeURIComponent(`[Bug] ${bug.title}`);
-    const body = encodeURIComponent(`## Description\n${bug.description}\n\n## Steps to Reproduce\n${bug.stepsToReproduce || 'Not provided'}\n\n## Environment\n- Source: ${bug.source}\n- Platform: ${bug.platform || 'N/A'}\n- CLI Version: ${bug.cliVersion || 'N/A'}\n\n---\n*Bug ID: ${bug.bugId}*`);
-    return `https://github.com/mrlynn/voyageai-cli/issues/new?title=${title}&body=${body}&labels=bug`;
-  };
-
-  if (!authenticated) {
-    return (
-      <Box sx={{ minHeight: '100vh', bgcolor: '#001E2B', py: 8 }}>
-        <Container maxWidth="sm">
-          <Paper sx={{ p: 4, bgcolor: '#112733', textAlign: 'center' }}>
-            <LockIcon sx={{ fontSize: 48, color: '#00ED64', mb: 2 }} />
-            <Typography variant="h5" sx={{ color: '#fff', mb: 3 }}>
-              Bug Tracker Admin
-            </Typography>
-            <TextField
-              fullWidth
-              type="password"
-              label="Admin Token"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchBugs()}
-              sx={{ mb: 2 }}
-              InputProps={{
-                sx: { color: '#fff' },
-              }}
-              InputLabelProps={{
-                sx: { color: '#889397' },
-              }}
-            />
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-            <Button
-              variant="contained"
-              onClick={fetchBugs}
-              disabled={!token || loading}
-              sx={{ bgcolor: '#00ED64', color: '#000', '&:hover': { bgcolor: '#00c853' } }}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Access Dashboard'}
-            </Button>
-            <Typography variant="caption" sx={{ display: 'block', mt: 2, color: '#889397' }}>
-              Set BUGS_ADMIN_TOKEN in Vercel env vars
-            </Typography>
-          </Paper>
-        </Container>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#001E2B', py: 4 }}>
-      <Container maxWidth="xl">
-        {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Box>
-            <Typography variant="h4" sx={{ color: '#fff', fontWeight: 600 }}>
-              🐛 Bug Tracker
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#889397' }}>
-              {bugs.length} total bugs • vaicli.com
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel sx={{ color: '#889397' }}>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                label="Status"
-                sx={{ color: '#fff', '.MuiOutlinedInput-notchedOutline': { borderColor: '#3D4F58' } }}
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="new">New</MenuItem>
-                <MenuItem value="investigating">Investigating</MenuItem>
-                <MenuItem value="resolved">Resolved</MenuItem>
-                <MenuItem value="closed">Closed</MenuItem>
-                <MenuItem value="wontfix">Won&apos;t Fix</MenuItem>
-              </Select>
-            </FormControl>
-            <IconButton onClick={fetchBugs} sx={{ color: '#00ED64' }}>
-              <RefreshIcon />
-            </IconButton>
-          </Box>
+    <Box sx={{ py: 2 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" mb={3}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 800,
+              color: palette.accent,
+              fontFamily: "'Source Code Pro', monospace",
+              mb: 1,
+            }}
+          >
+            Bug reports
+          </Typography>
+          <Typography sx={{ color: palette.textMuted }}>
+            Unified intake from CLI, playground, and desktop clients. {bugs.length} reports loaded.
+          </Typography>
         </Box>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon fontSize="small" />}
+          onClick={loadBugs}
+          disabled={loading}
+          sx={{ alignSelf: 'flex-start', borderColor: palette.border, color: palette.textMuted }}
+        >
+          {loading ? 'Refreshing…' : 'Refresh'}
+        </Button>
+      </Stack>
 
-        {/* Stats */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4, flexWrap: 'wrap' }}>
-          {['new', 'investigating', 'resolved', 'closed'].map(status => {
-            const count = stats.find(s => s._id === status)?.count || 0;
-            return (
-              <Paper
-                key={status}
-                sx={{
-                  p: 2,
-                  bgcolor: '#112733',
-                  minWidth: 120,
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  border: statusFilter === status ? '1px solid #00ED64' : '1px solid transparent',
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Card sx={{ bgcolor: palette.bgSurface, mb: 3 }}>
+        <CardContent>
+          <Stack spacing={2}>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2}>
+              <TextField
+                label="Search bugs"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                fullWidth
+                size="small"
+                placeholder="Title, bug ID, email, command, account ID..."
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: palette.textMuted }} />
+                    </InputAdornment>
+                  ),
                 }}
-                onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
-              >
-                <Typography variant="h4" sx={{ color: '#fff' }}>{count}</Typography>
-                <Chip
-                  label={status}
-                  size="small"
-                  color={STATUS_COLORS[status]}
-                  sx={{ mt: 1, textTransform: 'capitalize' }}
-                />
-              </Paper>
-            );
-          })}
-        </Box>
+              />
+              <TextField
+                label="From date"
+                type="date"
+                value={fromDate}
+                onChange={(event) => setFromDate(event.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 180 }}
+              />
+            </Stack>
 
-        {/* Bug Table */}
-        <TableContainer component={Paper} sx={{ bgcolor: '#112733' }}>
-          <Table>
-            <TableHead>
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} useFlexGap flexWrap="wrap">
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Status</InputLabel>
+                <Select value={statusFilter} label="Status" onChange={(event) => setStatusFilter(event.target.value)}>
+                  <MenuItem value="all">All statuses</MenuItem>
+                  {STATUS_OPTIONS.map((status) => (
+                    <MenuItem key={status} value={status}>
+                      {status}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Priority</InputLabel>
+                <Select value={priorityFilter} label="Priority" onChange={(event) => setPriorityFilter(event.target.value)}>
+                  <MenuItem value="all">All priorities</MenuItem>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <MenuItem key={priority} value={priority}>
+                      {priority}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Source</InputLabel>
+                <Select value={sourceFilter} label="Source" onChange={(event) => setSourceFilter(event.target.value)}>
+                  <MenuItem value="all">All sources</MenuItem>
+                  {sourceOptions.map((source) => (
+                    <MenuItem key={source} value={source}>
+                      {source}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Platform</InputLabel>
+                <Select value={platformFilter} label="Platform" onChange={(event) => setPlatformFilter(event.target.value)}>
+                  <MenuItem value="all">All platforms</MenuItem>
+                  {platformOptions.map((platform) => (
+                    <MenuItem key={platform} value={platform}>
+                      {platform}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 170 }}>
+                <InputLabel>Version</InputLabel>
+                <Select value={versionFilter} label="Version" onChange={(event) => setVersionFilter(event.target.value)}>
+                  <MenuItem value="all">All versions</MenuItem>
+                  {versionOptions.map((version) => (
+                    <MenuItem key={version} value={version}>
+                      {version}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} mb={3}>
+        <Card sx={{ flex: 1, bgcolor: palette.bgSurface }}>
+          <CardContent>
+            <Typography sx={{ fontWeight: 700, color: palette.text, mb: 1 }}>Status</Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {stats.status.map((bucket) => (
+                <Chip
+                  key={bucket._id}
+                  label={`${bucket._id}: ${bucket.count}`}
+                  onClick={() => setStatusFilter(statusFilter === bucket._id ? 'all' : bucket._id)}
+                  sx={{
+                    color: '#001E2B',
+                    bgcolor: STATUS_COLORS[bucket._id as BugStatus] || palette.textMuted,
+                    border: statusFilter === bucket._id ? `1px solid ${palette.text}` : 'none',
+                  }}
+                />
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+        <Card sx={{ flex: 1, bgcolor: palette.bgSurface }}>
+          <CardContent>
+            <Typography sx={{ fontWeight: 700, color: palette.text, mb: 1 }}>Priority</Typography>
+            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+              {stats.priority.map((bucket) => (
+                <Chip
+                  key={bucket._id}
+                  label={`${bucket._id}: ${bucket.count}`}
+                  onClick={() => setPriorityFilter(priorityFilter === bucket._id ? 'all' : bucket._id)}
+                  sx={{
+                    color: bucket._id === 'low' ? palette.text : '#001E2B',
+                    bgcolor: PRIORITY_COLORS[bucket._id as BugPriority] || palette.textMuted,
+                    border: priorityFilter === bucket._id ? `1px solid ${palette.text}` : 'none',
+                  }}
+                />
+              ))}
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      <TableContainer component={Paper} sx={{ bgcolor: palette.bgSurface }}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Bug</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Source</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Status</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Priority</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Version</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Created</TableCell>
+              <TableCell sx={{ color: palette.textMuted, fontWeight: 700 }}>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading && bugs.length === 0 ? (
               <TableRow>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Bug ID</TableCell>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Title</TableCell>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Source</TableCell>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Created</TableCell>
-                <TableCell sx={{ color: '#889397', fontWeight: 600 }}>Actions</TableCell>
+                <TableCell colSpan={7} sx={{ py: 6, textAlign: 'center' }}>
+                  <CircularProgress size={24} sx={{ color: palette.accent }} />
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredBugs.map((bug) => (
-                <TableRow key={bug._id} hover sx={{ '&:hover': { bgcolor: '#1C2D38' } }}>
-                  <TableCell sx={{ color: '#00ED64', fontFamily: 'monospace', fontSize: 12 }}>
-                    {bug.bugId}
-                  </TableCell>
-                  <TableCell sx={{ color: '#fff', maxWidth: 300 }}>
-                    <Typography noWrap>{bug.title}</Typography>
-                    {bug.email && (
-                      <Typography variant="caption" sx={{ color: '#889397' }}>
-                        {bug.email}
-                      </Typography>
-                    )}
+            ) : filteredBugs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} sx={{ py: 6, textAlign: 'center', color: palette.textMuted }}>
+                  No bug reports match the current filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredBugs.map((bug) => (
+                <TableRow key={bug._id} hover sx={{ '&:hover': { bgcolor: palette.bgCard } }}>
+                  <TableCell sx={{ minWidth: 280 }}>
+                    <Typography sx={{ color: palette.text, fontWeight: 600 }}>{bug.title}</Typography>
+                    <Typography sx={{ color: palette.accent, fontFamily: 'monospace', fontSize: 12 }}>
+                      {bug.bugId}
+                    </Typography>
+                    <Typography sx={{ color: palette.textMuted, fontSize: 12 }}>
+                      {bug.email || bug.accountId || bug.userId || 'No contact identifier'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      label={bug.source}
-                      size="small"
-                      sx={{
-                        bgcolor: bug.source === 'desktop-app' ? '#5E0C9E' : '#016BF8',
-                        color: '#fff',
-                      }}
-                    />
-                    {bug.platform && (
-                      <Typography variant="caption" sx={{ display: 'block', color: '#889397' }}>
-                        {bug.platform}
-                      </Typography>
-                    )}
+                    <Chip label={bug.source} size="small" sx={{ bgcolor: palette.blueDark, color: '#fff' }} />
+                    <Typography sx={{ color: palette.textMuted, fontSize: 12, mt: 0.5 }}>
+                      {bug.platform || 'Unknown platform'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Select
                       value={bug.status}
-                      onChange={(e) => updateBugStatus(bug.bugId, e.target.value)}
                       size="small"
-                      sx={{
-                        color: '#fff',
-                        '.MuiOutlinedInput-notchedOutline': { borderColor: '#3D4F58' },
-                        minWidth: 130,
+                      onChange={(event) => {
+                        void patchBug(bug.bugId, { status: event.target.value });
                       }}
+                      sx={{ minWidth: 150 }}
                     >
-                      <MenuItem value="new">New</MenuItem>
-                      <MenuItem value="investigating">Investigating</MenuItem>
-                      <MenuItem value="resolved">Resolved</MenuItem>
-                      <MenuItem value="closed">Closed</MenuItem>
-                      <MenuItem value="wontfix">Won&apos;t Fix</MenuItem>
+                      {STATUS_OPTIONS.map((status) => (
+                        <MenuItem key={status} value={status}>
+                          {status}
+                        </MenuItem>
+                      ))}
                     </Select>
                   </TableCell>
-                  <TableCell sx={{ color: '#889397' }}>
+                  <TableCell>
+                    <Select
+                      value={bug.priority || 'medium'}
+                      size="small"
+                      onChange={(event) => {
+                        void patchBug(bug.bugId, { priority: event.target.value });
+                      }}
+                      sx={{ minWidth: 120 }}
+                    >
+                      {PRIORITY_OPTIONS.map((priority) => (
+                        <MenuItem key={priority} value={priority}>
+                          {priority}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </TableCell>
+                  <TableCell sx={{ color: palette.textMuted }}>
+                    {bug.appVersion || bug.cliVersion || 'N/A'}
+                  </TableCell>
+                  <TableCell sx={{ color: palette.textMuted }}>
                     {formatDate(bug.createdAt)}
-                    {bug.country && (
-                      <Typography variant="caption" sx={{ display: 'block' }}>
-                        {bug.country}
-                      </Typography>
-                    )}
+                    <Typography sx={{ fontSize: 12, color: palette.textMuted }}>
+                      {bug.country || 'Unknown region'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
-                    <Tooltip title="View Details">
-                      <IconButton size="small" onClick={() => setSelectedBug(bug)} sx={{ color: '#889397' }}>
-                        <ViewIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Create GitHub Issue">
+                    <Tooltip title="View triage details">
                       <IconButton
                         size="small"
-                        onClick={() => window.open(generateGitHubUrl(bug), '_blank')}
-                        sx={{ color: '#889397' }}
+                        onClick={() => {
+                          setSelectedBug(bug);
+                          setTriageDraft(defaultDraft(bug));
+                        }}
+                        sx={{ color: palette.textMuted }}
                       >
-                        <GitHubIcon />
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Open GitHub issue flow">
+                      <IconButton
+                        size="small"
+                        onClick={() => window.open(bug.githubIssueUrl || fallbackGitHubUrl(bug), '_blank')}
+                        sx={{ color: palette.textMuted }}
+                      >
+                        <GitHubIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
                 </TableRow>
-              ))}
-              {filteredBugs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} sx={{ textAlign: 'center', color: '#889397', py: 4 }}>
-                    No bugs found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-        {/* Bug Detail Dialog */}
-        <Dialog
-          open={!!selectedBug}
-          onClose={() => setSelectedBug(null)}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{ sx: { bgcolor: '#112733', color: '#fff' } }}
-        >
-          {selectedBug && (
-            <>
-              <DialogTitle sx={{ borderBottom: '1px solid #3D4F58' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <span>🐛</span>
-                  <Box>
-                    <Typography variant="h6">{selectedBug.title}</Typography>
-                    <Typography variant="caption" sx={{ color: '#889397' }}>
-                      {selectedBug.bugId} • {formatDate(selectedBug.createdAt)}
-                    </Typography>
-                  </Box>
+      <Dialog
+        open={Boolean(selectedBug)}
+        onClose={() => setSelectedBug(null)}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{ sx: { bgcolor: palette.bgSurface, color: palette.text } }}
+      >
+        {selectedBug && triageDraft && (
+          <>
+            <DialogTitle sx={{ borderBottom: `1px solid ${palette.border}` }}>
+              <Typography component="div" variant="h6" sx={{ fontWeight: 700 }}>
+                {selectedBug.title}
+              </Typography>
+              <Typography component="div" sx={{ color: palette.textMuted, fontSize: 12 }}>
+                {selectedBug.bugId} · opened {formatDate(selectedBug.createdAt)}
+              </Typography>
+            </DialogTitle>
+            <DialogContent sx={{ pt: 3 }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: palette.accent, mb: 1 }}>Description</Typography>
+                  <Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedBug.description}</Typography>
                 </Box>
-              </DialogTitle>
-              <DialogContent sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" sx={{ color: '#00ED64', mb: 1 }}>
-                  Description
-                </Typography>
-                <Typography sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>
-                  {selectedBug.description}
-                </Typography>
 
                 {selectedBug.stepsToReproduce && (
-                  <>
-                    <Typography variant="subtitle2" sx={{ color: '#00ED64', mb: 1 }}>
-                      Steps to Reproduce
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, color: palette.accent, mb: 1 }}>
+                      Steps to reproduce
                     </Typography>
-                    <Typography sx={{ mb: 3, whiteSpace: 'pre-wrap' }}>
-                      {selectedBug.stepsToReproduce}
-                    </Typography>
-                  </>
+                    <Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedBug.stepsToReproduce}</Typography>
+                  </Box>
                 )}
 
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField
+                    select
+                    label="Status"
+                    value={triageDraft.status}
+                    onChange={(event) =>
+                      setTriageDraft((draft) => (draft ? { ...draft, status: event.target.value as BugStatus } : draft))
+                    }
+                    fullWidth
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {status}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    select
+                    label="Priority"
+                    value={triageDraft.priority}
+                    onChange={(event) =>
+                      setTriageDraft((draft) =>
+                        draft ? { ...draft, priority: event.target.value as BugPriority } : draft
+                      )
+                    }
+                    fullWidth
+                  >
+                    {PRIORITY_OPTIONS.map((priority) => (
+                      <MenuItem key={priority} value={priority}>
+                        {priority}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    label="Assignee"
+                    value={triageDraft.assignee}
+                    onChange={(event) =>
+                      setTriageDraft((draft) => (draft ? { ...draft, assignee: event.target.value } : draft))
+                    }
+                    fullWidth
+                  />
+                </Stack>
+
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField
+                    label="Labels"
+                    value={triageDraft.labels}
+                    onChange={(event) =>
+                      setTriageDraft((draft) => (draft ? { ...draft, labels: event.target.value } : draft))
+                    }
+                    helperText="Comma-separated labels"
+                    fullWidth
+                  />
+                  <TextField
+                    label="GitHub issue URL"
+                    value={triageDraft.githubIssueUrl}
+                    onChange={(event) =>
+                      setTriageDraft((draft) =>
+                        draft ? { ...draft, githubIssueUrl: event.target.value } : draft
+                      )
+                    }
+                    fullWidth
+                  />
+                  <TextField
+                    label="GitHub issue #"
+                    value={triageDraft.githubIssueNumber}
+                    onChange={(event) =>
+                      setTriageDraft((draft) =>
+                        draft ? { ...draft, githubIssueNumber: event.target.value } : draft
+                      )
+                    }
+                    sx={{ minWidth: 180 }}
+                  />
+                </Stack>
+
+                <TextField
+                  label="Resolution notes"
+                  value={triageDraft.resolution}
+                  onChange={(event) =>
+                    setTriageDraft((draft) => (draft ? { ...draft, resolution: event.target.value } : draft))
+                  }
+                  multiline
+                  minRows={2}
+                />
+
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: palette.accent, mb: 1 }}>
+                    Contact and identity
+                  </Typography>
+                  <Stack spacing={0.5}>
+                    <Typography>Email: {selectedBug.email || 'Not provided'}</Typography>
+                    <Typography>Account ID: {selectedBug.accountId || 'Not provided'}</Typography>
+                    <Typography>User ID: {selectedBug.userId || 'Not provided'}</Typography>
+                    <Typography>Session ID: {selectedBug.sessionId || 'Not provided'}</Typography>
+                  </Stack>
+                </Box>
+
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: palette.accent, mb: 1 }}>
+                    Runtime context
+                  </Typography>
+                  <Stack spacing={0.5}>
+                    <Typography>Source: {selectedBug.source}</Typography>
+                    <Typography>Current screen: {selectedBug.currentScreen || 'N/A'}</Typography>
+                    <Typography>Current command: {selectedBug.currentCommand || 'N/A'}</Typography>
+                    <Typography>Current URL: {selectedBug.currentUrl || 'N/A'}</Typography>
+                    <Typography>Platform: {selectedBug.platform || 'N/A'}</Typography>
+                    <Typography>Arch: {selectedBug.arch || 'N/A'}</Typography>
+                    <Typography>CLI version: {selectedBug.cliVersion || 'N/A'}</Typography>
+                    <Typography>App version: {selectedBug.appVersion || 'N/A'}</Typography>
+                    <Typography>Electron version: {selectedBug.electronVersion || 'N/A'}</Typography>
+                    <Typography>Node version: {selectedBug.nodeVersion || 'N/A'}</Typography>
+                    <Typography>Fingerprint: {selectedBug.fingerprint || 'N/A'}</Typography>
+                  </Stack>
+                </Box>
+
                 {selectedBug.errorMessage && (
-                  <>
-                    <Typography variant="subtitle2" sx={{ color: '#FF6960', mb: 1 }}>
-                      Error Message
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: '#001E2B', mb: 3, fontFamily: 'monospace', fontSize: 12 }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, color: palette.red, mb: 1 }}>Error message</Typography>
+                    <Paper sx={{ p: 2, bgcolor: palette.bg, fontFamily: 'monospace', fontSize: 12 }}>
                       {selectedBug.errorMessage}
                     </Paper>
-                  </>
+                  </Box>
                 )}
 
                 {selectedBug.errorStack && (
-                  <>
-                    <Typography variant="subtitle2" sx={{ color: '#FF6960', mb: 1 }}>
-                      Stack Trace
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: '#001E2B', mb: 3, fontFamily: 'monospace', fontSize: 11, maxHeight: 200, overflow: 'auto' }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, color: palette.red, mb: 1 }}>Stack trace</Typography>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: palette.bg,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        maxHeight: 220,
+                        overflow: 'auto',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
                       {selectedBug.errorStack}
                     </Paper>
-                  </>
+                  </Box>
                 )}
 
-                <Typography variant="subtitle2" sx={{ color: '#00ED64', mb: 1 }}>
-                  Environment
-                </Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
-                  <Typography variant="body2"><strong>Source:</strong> {selectedBug.source}</Typography>
-                  <Typography variant="body2"><strong>Platform:</strong> {selectedBug.platform || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>CLI Version:</strong> {selectedBug.cliVersion || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>App Version:</strong> {selectedBug.appVersion || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Country:</strong> {selectedBug.country || 'N/A'}</Typography>
-                  <Typography variant="body2"><strong>Email:</strong> {selectedBug.email || 'Not provided'}</Typography>
-                </Box>
-              </DialogContent>
-              <DialogActions sx={{ borderTop: '1px solid #3D4F58', p: 2 }}>
-                <Button
-                  startIcon={<GitHubIcon />}
-                  onClick={() => window.open(generateGitHubUrl(selectedBug), '_blank')}
-                  sx={{ color: '#fff' }}
-                >
-                  Create GitHub Issue
-                </Button>
-                <Button onClick={() => setSelectedBug(null)} variant="contained" sx={{ bgcolor: '#00ED64', color: '#000' }}>
-                  Close
-                </Button>
-              </DialogActions>
-            </>
-          )}
-        </Dialog>
-      </Container>
+                {selectedBug.consoleLogs && (
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, color: palette.accent, mb: 1 }}>Console logs</Typography>
+                    <Paper
+                      sx={{
+                        p: 2,
+                        bgcolor: palette.bg,
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        maxHeight: 180,
+                        overflow: 'auto',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {selectedBug.consoleLogs}
+                    </Paper>
+                  </Box>
+                )}
+              </Stack>
+            </DialogContent>
+            <DialogActions sx={{ borderTop: `1px solid ${palette.border}`, p: 2 }}>
+              <Button
+                startIcon={<OpenInNewIcon fontSize="small" />}
+                onClick={() => window.open(selectedBug.githubIssueUrl || fallbackGitHubUrl(selectedBug), '_blank')}
+                sx={{ color: palette.text }}
+              >
+                Open GitHub issue
+              </Button>
+              <Button
+                startIcon={<SaveIcon fontSize="small" />}
+                variant="contained"
+                onClick={() => void saveTriage()}
+                disabled={saving}
+                sx={{ bgcolor: palette.accent, color: palette.bg, '&:hover': { bgcolor: palette.accentDim } }}
+              >
+                {saving ? 'Saving…' : 'Save triage'}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }
