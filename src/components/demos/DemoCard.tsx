@@ -22,7 +22,6 @@ import CheckIcon from '@mui/icons-material/Check';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import Image from 'next/image';
 import { palette } from '@/theme/theme';
 import type { DemoData } from '@/data/demos';
 import UnderTheHoodPanel from '@/components/demos/UnderTheHoodPanel';
@@ -42,14 +41,19 @@ function getCapabilityChips(demo: DemoData): string[] {
   return chips;
 }
 
+function isVideoPreview(path: string): boolean {
+  return path.endsWith('.mp4') || path.endsWith('.webm');
+}
+
 export default function DemoCard({ demo }: DemoCardProps) {
-  const [imageError, setImageError] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const [copied, setCopied] = useState(false);
   const [commandCopied, setCommandCopied] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const capabilityChips = useMemo(() => getCapabilityChips(demo), [demo]);
-  const hasPreview = !imageError;
+  const isVideo = useMemo(() => isVideoPreview(demo.assets.sitePreviewPath), [demo.assets.sitePreviewPath]);
+  const hasPreview = !previewError;
 
   const handleCopyCommands = async () => {
     await navigator.clipboard.writeText(demo.commands.join('\n'));
@@ -120,7 +124,7 @@ export default function DemoCard({ demo }: DemoCardProps) {
             <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#27C93F' }} />
           </Box>
 
-          {imageError ? (
+          {previewError ? (
             <Box
               sx={{
                 width: '100%',
@@ -139,18 +143,43 @@ export default function DemoCard({ demo }: DemoCardProps) {
                 Preview asset not published yet
               </Typography>
               <Typography sx={{ color: palette.textMuted, maxWidth: 320, fontSize: '0.9rem' }}>
-                The demo metadata is ready. Copy the GIF into `public/demos/` to light up this card.
+                The demo metadata is ready. Copy the preview asset into `public/demos/` to light up this card.
               </Typography>
             </Box>
           ) : (
-            <Image
-              src={demo.assets.sitePreviewPath}
-              alt={demo.title}
-              fill
-              sizes="(max-width: 900px) 100vw, 33vw"
-              style={{ objectFit: 'cover' }}
-              onError={() => setImageError(true)}
-            />
+            <>
+              {isVideo ? (
+                <Box
+                  component="video"
+                  src={demo.assets.sitePreviewPath}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  onError={() => setPreviewError(true)}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              ) : (
+                <Box
+                  component="img"
+                  src={demo.assets.sitePreviewPath}
+                  alt={demo.title}
+                  onError={() => setPreviewError(true)}
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+              )}
+            </>
           )}
         </Box>
         {hasPreview && (
@@ -431,13 +460,36 @@ export default function DemoCard({ demo }: DemoCardProps) {
               bgcolor: palette.bg,
             }}
           >
-            <Image
-              src={demo.assets.sitePreviewPath}
-              alt={`${demo.title} enlarged preview`}
-              fill
-              sizes="100vw"
-              style={{ objectFit: 'contain' }}
-            />
+            {isVideo ? (
+              <Box
+                component="video"
+                src={demo.assets.sitePreviewPath}
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={demo.assets.sitePreviewPath}
+                alt={`${demo.title} enlarged preview`}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            )}
           </Box>
 
           <Typography sx={{ color: palette.text, fontWeight: 600, mt: 2 }}>

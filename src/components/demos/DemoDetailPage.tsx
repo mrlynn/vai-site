@@ -20,7 +20,6 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
-import Image from 'next/image';
 import { palette } from '@/theme/theme';
 import type { DemoData } from '@/data/demos';
 import { getRelatedDemos } from '@/data/demos';
@@ -44,10 +43,17 @@ function getCapabilityChips(demo: DemoData): string[] {
   return chips;
 }
 
+function isVideoPreview(path: string): boolean {
+  return path.endsWith('.mp4') || path.endsWith('.webm');
+}
+
 export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
   const related = useMemo(() => getRelatedDemos(demo), [demo]);
   const capabilityChips = useMemo(() => getCapabilityChips(demo), [demo]);
+  const isVideo = useMemo(() => isVideoPreview(demo.assets.sitePreviewPath), [demo.assets.sitePreviewPath]);
+  const hasPreview = !previewError;
 
   return (
     <>
@@ -105,7 +111,10 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
               </Box>
 
               <ButtonBase
-                onClick={() => setPreviewOpen(true)}
+                onClick={() => {
+                  if (hasPreview) setPreviewOpen(true);
+                }}
+                disabled={!hasPreview}
                 sx={{
                   display: 'block',
                   width: '100%',
@@ -113,9 +122,9 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                   borderRadius: 3,
                   overflow: 'hidden',
                   mb: 3,
-                  cursor: 'zoom-in',
+                  cursor: hasPreview ? 'zoom-in' : 'default',
                   border: `1px solid ${palette.border}`,
-                  '&:hover .demo-detail-overlay': { opacity: 1 },
+                  '&:hover .demo-detail-overlay': { opacity: hasPreview ? 1 : 0 },
                 }}
               >
                 <Box
@@ -126,33 +135,84 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                     bgcolor: palette.bgSurface,
                   }}
                 >
-                  <Image
-                    src={demo.assets.sitePreviewPath}
-                    alt={demo.title}
-                    fill
-                    sizes="(max-width: 900px) 100vw, 60vw"
-                    style={{ objectFit: 'cover' }}
-                  />
+                  {hasPreview ? (
+                    <>
+                      {isVideo ? (
+                        <Box
+                          component="video"
+                          src={demo.assets.sitePreviewPath}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          onError={() => setPreviewError(true)}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          component="img"
+                          src={demo.assets.sitePreviewPath}
+                          alt={demo.title}
+                          onError={() => setPreviewError(true)}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        px: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        gap: 1.25,
+                      }}
+                    >
+                      <Typography sx={{ color: palette.text, fontWeight: 600 }}>
+                        Preview asset not published yet
+                      </Typography>
+                      <Typography sx={{ color: palette.textMuted, maxWidth: 360, fontSize: '0.95rem' }}>
+                        Publish the preview media under `public/demos/` to enable the full detail-page preview.
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
-                <Box
-                  className="demo-detail-overlay"
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'space-between',
-                    px: 2,
-                    py: 1.5,
-                    color: '#fff',
-                    background: 'linear-gradient(180deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.78) 100%)',
-                    opacity: 0,
-                    transition: 'opacity 0.2s ease',
-                  }}
-                >
-                  <Typography sx={{ fontWeight: 600 }}>Click to enlarge</Typography>
-                  <ZoomInIcon />
-                </Box>
+                {hasPreview && (
+                  <Box
+                    className="demo-detail-overlay"
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'space-between',
+                      px: 2,
+                      py: 1.5,
+                      color: '#fff',
+                      background: 'linear-gradient(180deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.78) 100%)',
+                      opacity: 0,
+                      transition: 'opacity 0.2s ease',
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 600 }}>Click to enlarge</Typography>
+                    <ZoomInIcon />
+                  </Box>
+                )}
               </ButtonBase>
 
               <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>
@@ -329,13 +389,36 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
               bgcolor: palette.bg,
             }}
           >
-            <Image
-              src={demo.assets.sitePreviewPath}
-              alt={`${demo.title} enlarged preview`}
-              fill
-              sizes="100vw"
-              style={{ objectFit: 'contain' }}
-            />
+            {isVideo ? (
+              <Box
+                component="video"
+                src={demo.assets.sitePreviewPath}
+                controls
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            ) : (
+              <Box
+                component="img"
+                src={demo.assets.sitePreviewPath}
+                alt={`${demo.title} enlarged preview`}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  display: 'block',
+                }}
+              />
+            )}
           </Box>
         </DialogContent>
       </Dialog>

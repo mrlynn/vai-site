@@ -1,6 +1,6 @@
 # Demo Preview Assets
 
-This directory stores the public preview assets used by the demo gallery on
+This directory stores the public preview media used by the demo gallery on
 `vaicli.com`.
 
 For now, assets are copied here by hand from `voyageai-cli` after a demo is
@@ -9,24 +9,24 @@ recorded and approved.
 ## Manual Publishing Flow
 
 1. Record or update the source tape in `voyageai-cli/docs/demos/` or `voyageai-cli/docs/demos/tapes/`.
-2. Generate the preview asset locally, usually with:
+2. Generate the source recording locally, usually with:
    `./scripts/record-demo.sh vhs docs/demos/<name>.tape`
    or
    `./scripts/record-demo.sh vhs docs/demos/tapes/<name>.tape`
-3. Optimize the asset if needed.
+3. Convert the selected recording to a web-friendly preview format such as `mp4`.
 4. Copy the selected file into this directory using the public slug, for
    example:
-   - `cli-quickstart.gif`
-   - `local-inference.gif`
-   - `ollama-nano-chat.gif`
-   - `what-is-an-embedding.gif`
-   - `document-vs-query.gif`
-   - `chunking-strategies.gif`
-   - `pipeline-end-to-end.gif`
-   - `two-stage-retrieval.gif`
-   - `shared-embedding-space.gif`
-   - `reranking.gif`
-   - `models-and-benchmarks.gif`
+   - `cli-quickstart.mp4`
+   - `local-inference.mp4`
+   - `ollama-nano-chat.mp4`
+   - `what-is-an-embedding.mp4`
+   - `document-vs-query.mp4`
+   - `chunking-strategies.mp4`
+   - `pipeline-end-to-end.mp4`
+   - `two-stage-retrieval.mp4`
+   - `shared-embedding-space.mp4`
+   - `reranking.mp4`
+   - `models-and-benchmarks.mp4`
 5. Confirm the matching entry in `src/data/demos.ts` points to the same public
    path under `/demos/`.
 

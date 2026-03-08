@@ -152,7 +152,7 @@ const demoRegistry: DemoData[] = [
     ],
     assets: {
       recordingOutput: 'demo.gif',
-      sitePreviewPath: '/demos/cli-quickstart.gif',
+      sitePreviewPath: '/demos/cli-quickstart.mp4',
     },
     source: {
       tapePath: 'docs/demos/demo.tape',
@@ -252,7 +252,7 @@ print(result.embeddings[0])`,
     ],
     assets: {
       recordingOutput: 'local-inference.gif',
-      sitePreviewPath: '/demos/local-inference.gif',
+      sitePreviewPath: '/demos/local-inference.mp4',
     },
     source: {
       tapePath: 'docs/demos/local-inference.tape',
@@ -330,7 +330,7 @@ print(result.embeddings[0])`,
     ],
     assets: {
       recordingOutput: 'ollama-nano-chat.gif',
-      sitePreviewPath: '/demos/ollama-nano-chat.gif',
+      sitePreviewPath: '/demos/ollama-nano-chat.mp4',
     },
     source: {
       tapePath: 'docs/demos/ollama-nano-chat.tape',
@@ -430,7 +430,7 @@ results = list(collection.aggregate(pipeline))`,
     ],
     assets: {
       recordingOutput: '01-what-is-an-embedding.gif',
-      sitePreviewPath: '/demos/what-is-an-embedding.gif',
+      sitePreviewPath: '/demos/what-is-an-embedding.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/01-what-is-an-embedding.tape',
@@ -525,7 +525,7 @@ print(len(result.embeddings[0]))  # 1024`,
     ],
     assets: {
       recordingOutput: '02-document-vs-query.gif',
-      sitePreviewPath: '/demos/document-vs-query.gif',
+      sitePreviewPath: '/demos/document-vs-query.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/02-document-vs-query.tape',
@@ -678,7 +678,7 @@ result = client.embed(
     ],
     assets: {
       recordingOutput: '03-chunking-strategies.gif',
-      sitePreviewPath: '/demos/chunking-strategies.gif',
+      sitePreviewPath: '/demos/chunking-strategies.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/03-chunking-strategies.tape',
@@ -747,7 +747,7 @@ result = client.embed(
     ],
     assets: {
       recordingOutput: '04-pipeline-end-to-end.gif',
-      sitePreviewPath: '/demos/pipeline-end-to-end.gif',
+      sitePreviewPath: '/demos/pipeline-end-to-end.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/04-pipeline-end-to-end.tape',
@@ -905,7 +905,7 @@ db.command({
     ],
     assets: {
       recordingOutput: '05-two-stage-retrieval.gif',
-      sitePreviewPath: '/demos/two-stage-retrieval.gif',
+      sitePreviewPath: '/demos/two-stage-retrieval.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/05-two-stage-retrieval.tape',
@@ -1091,7 +1091,7 @@ search_results = list(collection.aggregate(pipeline))`,
     ],
     assets: {
       recordingOutput: '06-shared-embedding-space.gif',
-      sitePreviewPath: '/demos/shared-embedding-space.gif',
+      sitePreviewPath: '/demos/shared-embedding-space.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/06-shared-embedding-space.tape',
@@ -1239,7 +1239,7 @@ search_results = list(collection.aggregate(pipeline))`,
     ],
     assets: {
       recordingOutput: '07-reranking.gif',
-      sitePreviewPath: '/demos/reranking.gif',
+      sitePreviewPath: '/demos/reranking.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/07-reranking.tape',
@@ -1410,7 +1410,7 @@ search_results = list(collection.aggregate(pipeline))`,
     ],
     assets: {
       recordingOutput: '08-models-and-benchmarks.gif',
-      sitePreviewPath: '/demos/models-and-benchmarks.gif',
+      sitePreviewPath: '/demos/models-and-benchmarks.mp4',
     },
     source: {
       tapePath: 'docs/demos/tapes/08-models-and-benchmarks.tape',
