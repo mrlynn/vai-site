@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useEffect, useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -48,7 +48,7 @@ import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
 import InsightsIcon from '@mui/icons-material/Insights';
 import HubIcon from '@mui/icons-material/Hub';
 import { BarChart, LineChart, PieChart } from '@mui/x-charts';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { palette } from '@/theme/theme';
 
 const DASHBOARD_TABS = [
@@ -69,7 +69,7 @@ type DayOption = (typeof DAY_OPTIONS)[number];
 type ModelLocalFilter = (typeof MODEL_LOCAL_OPTIONS)[number];
 
 // Lazy-load the map (SSR-unfriendly SVG library)
-const WorldMap = dynamic(() => import('@/components/WorldMap'), {
+const WorldMap = nextDynamic(() => import('@/components/WorldMap'), {
   ssr: false,
   loading: () => (
     <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -375,7 +375,23 @@ function normalizeQueryFilter(value: string | null, allowedValues?: string[]) {
   return value;
 }
 
-export default function Dashboard() {
+function DashboardLoadingFallback() {
+  return (
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: palette.bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <CircularProgress sx={{ color: palette.accent }} />
+    </Box>
+  );
+}
+
+function DashboardContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2392,5 +2408,13 @@ export default function Dashboard() {
         )}
       </Container>
     </Box>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoadingFallback />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
