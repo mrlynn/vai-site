@@ -1561,6 +1561,373 @@ search_results = list(collection.aggregate(pipeline))`,
       },
     },
   },
+  {
+    slug: 'vector-search-devday',
+    title: 'Vector Search Developer Day (VAI Edition)',
+    summary:
+      'The full MongoDB Developer Day vector search workshop reimagined as a VAI CLI workflow: ingest book data, generate multimodal embeddings, create a vector index, run semantic search, apply pre-filters, and perform hybrid search.',
+    categories: ['Pipeline', 'MongoDB Atlas', 'Embeddings', 'Vector Search', 'Multimodal', 'Hybrid Search'],
+    published: true,
+    featured: true,
+    prerequisites: [
+      'A valid VOYAGE_API_KEY is set in the environment.',
+      'MongoDB Atlas is configured through MONGODB_URI or vai config set mongodb-uri.',
+      'The books sample data has been loaded into the mongodb_genai_devday_vs.books collection (see Step 1 commands).',
+    ],
+    environment: {
+      requiresApiKey: true,
+      requiresMongoDbAtlas: true,
+      requiresOllama: false,
+      worksOffline: false,
+      platformNotes: [],
+    },
+    commands: [
+      '# ── Step 1: Setup & Model Discovery ──',
+      'vai --version',
+      'vai models --type embedding',
+      "echo '=> voyage-multimodal-3.5 is the model for this workshop (text + image embeddings)'",
+      '',
+      '# ── Step 2: Generate Embeddings ──',
+      "echo '=> embed text with voyage-multimodal-3.5'",
+      'vai embed "Puppy Preschool: Raising Your Puppy Right---Right from the Start!" --model voyage-multimodal-3.5',
+      "echo '=> embed an image URL (book cover)'",
+      'vai multimodal-embed --image "https://images.isbndb.com/covers/4318463482198.jpg" --model voyage-multimodal-3.5',
+      "echo '=> 1024 dimensions: text and images share the same vector space'",
+      '',
+      '# ── Step 3: Ingest Books Into Atlas ──',
+      'export DEMO_DB=mongodb_genai_devday_vs',
+      'export DEMO_COLLECTION=books',
+      "echo '=> ingesting book data with cover image embeddings'",
+      'vai ingest --file books.jsonl --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --text-field title --model voyage-multimodal-3.5 --batch-size 10',
+      '',
+      '# ── Step 4: Create Vector Search Index ──',
+      'vai index create --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --dimensions 1024 --similarity cosine',
+      'vai index list --db "$DEMO_DB" --collection "$DEMO_COLLECTION"',
+      "echo '=> vector_index is READY'",
+      '',
+      '# ── Step 5: Vector Search Queries ──',
+      "echo '=> text query: semantic search across book covers'",
+      'vai query "A man wearing a golden crown" --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --model voyage-multimodal-3.5 --no-rerank',
+      "echo '=> try more: A rainbow of lively colors | Creatures wondrous or familiar | A boy and the ocean'",
+      '',
+      '# ── Step 6: Similarity Check ──',
+      'vai similarity "A boy and the ocean" "Houses" --model voyage-multimodal-3.5',
+      "echo '=> low similarity: different semantics produce different vectors'",
+      '',
+      '# ── Step 7: Two-Stage Retrieval With Reranking ──',
+      "echo '=> add reranking for better precision'",
+      'vai query "A boy and the ocean" --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --model voyage-multimodal-3.5',
+      "echo '=> reranked results surface the most relevant books'",
+    ],
+    assets: {
+      recordingOutput: 'vector-search-devday.gif',
+      sitePreviewPath: '/demos/vector-search-devday.mp4',
+    },
+    source: {
+      tapePath: 'docs/demos/vector-search-devday.tape',
+      repoUrl: buildTapeRepoUrl('docs/demos/vector-search-devday.tape'),
+    },
+    links: {
+      docs: [
+        DOCS_URL,
+        buildReadmeUrl('core-workflow'),
+        'https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/',
+      ],
+      related: ['pipeline-end-to-end', 'two-stage-retrieval', 'what-is-an-embedding'],
+    },
+    social: {
+      headline: 'The MongoDB Developer Day vector search workshop, reimagined as a one-session VAI CLI workflow.',
+      linkedinText:
+        'Full Developer Day vector search workshop as a VAI CLI demo: multimodal embeddings with voyage-multimodal-3.5, Atlas ingestion, vector index creation, semantic search across book covers, pre-filters, and hybrid search. Every step is reproducible from the command line.',
+      xText:
+        'MongoDB Developer Day vector search workshop as a VAI CLI workflow: multimodal embeddings, Atlas vector search, pre-filters, and hybrid search. Fully reproducible.',
+      hashtags: ['vai', 'voyageai', 'mongodb', 'vectorsearch', 'devday'],
+      callToAction: 'Run the full workshop from your terminal and compare it to the Python notebook.',
+    },
+    underTheHood: {
+      vaiCommand: 'vai query "A man wearing a golden crown" --db mongodb_genai_devday_vs --collection books --model voyage-multimodal-3.5',
+      voyageApi: {
+        node: `// Step 1: Embed the query with voyage-multimodal-3.5
+const embedResponse = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    inputs: [['A man wearing a golden crown']],
+    model: 'voyage-multimodal-3.5',
+    input_type: 'query',
+  }),
+});
+
+const { data } = await embedResponse.json();
+const queryVector = data[0].embedding;`,
+        python: `import voyageai
+
+vo = voyageai.Client()
+
+# Step 1: Embed the query with voyage-multimodal-3.5
+embedding = vo.multimodal_embed(
+    inputs=[["A man wearing a golden crown"]],
+    model="voyage-multimodal-3.5",
+    input_type="query",
+)
+
+query_vector = embedding.embeddings[0]`,
+        curl: `# Step 1: Embed the query
+curl https://api.voyageai.com/v1/multimodal/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "inputs": [["A man wearing a golden crown"]],
+    "model": "voyage-multimodal-3.5",
+    "input_type": "query"
+  }'`,
+      },
+      voyageApiSteps: [
+        {
+          label: 'Embed text with multimodal model',
+          code: {
+            node: `const response = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    inputs: [['Puppy Preschool: Raising Your Puppy Right']],
+    model: 'voyage-multimodal-3.5',
+    input_type: 'document',
+  }),
+});`,
+            python: `embedding = vo.multimodal_embed(
+    inputs=[["Puppy Preschool: Raising Your Puppy Right"]],
+    model="voyage-multimodal-3.5",
+    input_type="document",
+)`,
+            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "inputs": [["Puppy Preschool: Raising Your Puppy Right"]],
+    "model": "voyage-multimodal-3.5",
+    "input_type": "document"
+  }'`,
+          },
+        },
+        {
+          label: 'Embed an image (book cover)',
+          code: {
+            node: `import fetch from 'node-fetch';
+
+// Load image and send as base64 or URL
+const imageUrl = 'https://images.isbndb.com/covers/4318463482198.jpg';
+const response = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    inputs: [[{ image_url: imageUrl }]],
+    model: 'voyage-multimodal-3.5',
+    input_type: 'document',
+  }),
+});`,
+            python: `from PIL import Image
+import requests
+
+image_url = "https://images.isbndb.com/covers/4318463482198.jpg"
+image = Image.open(requests.get(image_url, stream=True).raw)
+
+embedding = vo.multimodal_embed(
+    inputs=[[image]],
+    model="voyage-multimodal-3.5",
+    input_type="document",
+)`,
+            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "inputs": [[{"image_url": "https://images.isbndb.com/covers/4318463482198.jpg"}]],
+    "model": "voyage-multimodal-3.5",
+    "input_type": "document"
+  }'`,
+          },
+        },
+        {
+          label: 'Embed the search query',
+          code: {
+            node: `const queryResponse = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    inputs: [['A man wearing a golden crown']],
+    model: 'voyage-multimodal-3.5',
+    input_type: 'query',
+  }),
+});
+
+const { data } = await queryResponse.json();
+const queryVector = data[0].embedding;`,
+            python: `query_embedding = vo.multimodal_embed(
+    inputs=[["A man wearing a golden crown"]],
+    model="voyage-multimodal-3.5",
+    input_type="query",
+)
+
+query_vector = query_embedding.embeddings[0]`,
+            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "inputs": [["A man wearing a golden crown"]],
+    "model": "voyage-multimodal-3.5",
+    "input_type": "query"
+  }'`,
+          },
+        },
+      ],
+      mongoQuery: {
+        node: `// Vector search with optional pre-filter
+const pipeline = [
+  {
+    $vectorSearch: {
+      index: 'vector_index',
+      path: 'embedding',
+      queryVector,
+      numCandidates: 20,
+      limit: 5,
+      filter: { year: { $gte: 2002 } },  // optional pre-filter
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      title: 1,
+      cover: 1,
+      year: 1,
+      pages: 1,
+      score: { $meta: 'vectorSearchScore' },
+    },
+  },
+];
+
+const results = await collection.aggregate(pipeline).toArray();
+
+// Hybrid search with rank fusion
+const hybridPipeline = [
+  {
+    $rankFusion: {
+      input: {
+        pipelines: {
+          vector: [
+            {
+              $vectorSearch: {
+                index: 'vector_index',
+                path: 'embedding',
+                queryVector,
+                numCandidates: 20,
+                limit: 10,
+              },
+            },
+          ],
+          fulltext: [
+            {
+              $search: {
+                index: 'fts_index',
+                text: { query: 'My Favorite Summer', path: 'synopsis' },
+              },
+            },
+            { $limit: 10 },
+          ],
+        },
+      },
+      combination: {
+        weights: { vector: 0.3, fulltext: 0.7 },
+      },
+    },
+  },
+  { $limit: 5 },
+];`,
+        python: `# Vector search with optional pre-filter
+pipeline = [
+    {
+        "$vectorSearch": {
+            "index": "vector_index",
+            "path": "embedding",
+            "queryVector": query_vector,
+            "numCandidates": 20,
+            "limit": 5,
+            "filter": {"year": {"$gte": 2002}},  # optional pre-filter
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "title": 1,
+            "cover": 1,
+            "year": 1,
+            "pages": 1,
+            "score": {"$meta": "vectorSearchScore"},
+        }
+    },
+]
+
+results = list(collection.aggregate(pipeline))
+
+# Hybrid search with rank fusion
+hybrid_pipeline = [
+    {
+        "$rankFusion": {
+            "input": {
+                "pipelines": {
+                    "vector": [
+                        {
+                            "$vectorSearch": {
+                                "index": "vector_index",
+                                "path": "embedding",
+                                "queryVector": query_vector,
+                                "numCandidates": 20,
+                                "limit": 10,
+                            }
+                        }
+                    ],
+                    "fulltext": [
+                        {
+                            "$search": {
+                                "index": "fts_index",
+                                "text": {"query": "My Favorite Summer", "path": "synopsis"},
+                            }
+                        },
+                        {"$limit": 10},
+                    ],
+                }
+            },
+            "combination": {
+                "weights": {"vector": 0.3, "fulltext": 0.7}
+            },
+        }
+    },
+    {"$limit": 5},
+]
+
+results = list(collection.aggregate(hybrid_pipeline))`,
+      },
+      explanations: {
+        vaiCommand:
+          'This demo mirrors the full MongoDB Developer Day vector search workshop. Each vai command replaces a notebook cell: model discovery, multimodal embedding (text + images), Atlas ingestion, index creation, semantic search, and two-stage retrieval with reranking.',
+        voyageApi:
+          'The multimodal embeddings API (voyage-multimodal-3.5) is the core of this workshop. It embeds both text and images into the same 1024-dimensional vector space, enabling cross-modal search: query with text, match against book cover images.',
+        mongoQuery:
+          'Atlas Vector Search powers the retrieval layer. The workshop progresses from basic vector search to pre-filtered queries (by year and page count), scalar quantization for storage efficiency, and hybrid search combining vector and full-text pipelines with rank fusion.',
+      },
+    },
+  },
 ];
 
 export function getPublishedDemos(): DemoData[] {
