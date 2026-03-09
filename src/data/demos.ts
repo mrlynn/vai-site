@@ -63,6 +63,24 @@ export interface DemoUnderTheHood {
   };
 }
 
+export interface DemoSetupStep {
+  title: string;
+  description: string;
+  commands: string[];
+}
+
+export interface DemoSetupTab {
+  id: string;
+  label: string;
+  steps: DemoSetupStep[];
+}
+
+export interface DemoSetupGuide {
+  title: string;
+  description: string;
+  tabs: DemoSetupTab[];
+}
+
 export interface DemoData {
   slug: string;
   title: string;
@@ -73,6 +91,7 @@ export interface DemoData {
   prerequisites: string[];
   environment: DemoEnvironment;
   commands: string[];
+  setupGuide?: DemoSetupGuide;
   assets: DemoAssets;
   source: DemoSource;
   links: DemoLinks;
@@ -1565,60 +1584,143 @@ search_results = list(collection.aggregate(pipeline))`,
     slug: 'vector-search-devday',
     title: 'Vector Search Developer Day (VAI Edition)',
     summary:
-      'The full MongoDB Developer Day vector search workshop reimagined as a VAI CLI workflow: ingest book data, generate multimodal embeddings, create a vector index, run semantic search, apply pre-filters, and perform hybrid search.',
-    categories: ['Pipeline', 'MongoDB Atlas', 'Embeddings', 'Vector Search', 'Multimodal', 'Hybrid Search'],
+      'The complete MongoDB Developer Day vector search workshop reimagined as a VAI CLI workflow: set up a local MongoDB Atlas instance, install the CLI, generate local embeddings with voyage-4-nano, create a vector index, and run semantic search — end to end from the command line.',
+    categories: ['Pipeline', 'MongoDB Atlas', 'Embeddings', 'Vector Search', 'Local Embeddings', 'Hybrid Search', 'Docker'],
     published: true,
     featured: true,
     prerequisites: [
-      'A valid VOYAGE_API_KEY is set in the environment.',
-      'MongoDB Atlas is configured through MONGODB_URI or vai config set mongodb-uri.',
-      'The books sample data has been loaded into the mongodb_genai_devday_vs.books collection (see Step 1 commands).',
+      'Docker installed (for local MongoDB Atlas) or access to a MongoDB Atlas cluster.',
+      'Node.js >= 18 installed.',
+      'VAI CLI installed globally: `npm install -g voyageai-cli`.',
+      'For query commands (Step 5+), a VOYAGE_API_KEY is needed — free tier available at voyageai.com. Embedding and ingestion run entirely locally with nano.',
     ],
     environment: {
-      requiresApiKey: true,
+      requiresApiKey: false,
       requiresMongoDbAtlas: true,
       requiresOllama: false,
       worksOffline: false,
-      platformNotes: [],
+      platformNotes: [
+        'Step 0 sets up a local MongoDB Atlas instance via Docker — no cloud account needed for the database.',
+        'Embedding and ingestion use voyage-4-nano locally (no API key).',
+        'Query commands use voyage-4-lite via API (same embedding space, $0.02/1M tokens).',
+      ],
     },
     commands: [
-      '# ── Step 1: Setup & Model Discovery ──',
-      'vai --version',
-      'vai models --type embedding',
-      "echo '=> voyage-multimodal-3.5 is the model for this workshop (text + image embeddings)'",
-      '',
-      '# ── Step 2: Generate Embeddings ──',
-      "echo '=> embed text with voyage-multimodal-3.5'",
-      'vai embed "Puppy Preschool: Raising Your Puppy Right---Right from the Start!" --model voyage-multimodal-3.5',
-      "echo '=> embed an image URL (book cover)'",
-      'vai multimodal-embed --image "https://images.isbndb.com/covers/4318463482198.jpg" --model voyage-multimodal-3.5',
-      "echo '=> 1024 dimensions: text and images share the same vector space'",
-      '',
-      '# ── Step 3: Ingest Books Into Atlas ──',
-      'export DEMO_DB=mongodb_genai_devday_vs',
-      'export DEMO_COLLECTION=books',
-      "echo '=> ingesting book data with cover image embeddings'",
-      'vai ingest --file books.jsonl --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --text-field title --model voyage-multimodal-3.5 --batch-size 10',
-      '',
-      '# ── Step 4: Create Vector Search Index ──',
-      'vai index create --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --dimensions 1024 --similarity cosine',
-      'vai index list --db "$DEMO_DB" --collection "$DEMO_COLLECTION"',
-      "echo '=> vector_index is READY'",
-      '',
-      '# ── Step 5: Vector Search Queries ──',
-      "echo '=> text query: semantic search across book covers'",
-      'vai query "A man wearing a golden crown" --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --model voyage-multimodal-3.5 --no-rerank',
-      "echo '=> try more: A rainbow of lively colors | Creatures wondrous or familiar | A boy and the ocean'",
-      '',
-      '# ── Step 6: Similarity Check ──',
-      'vai similarity "A boy and the ocean" "Houses" --model voyage-multimodal-3.5',
-      "echo '=> low similarity: different semantics produce different vectors'",
-      '',
-      '# ── Step 7: Two-Stage Retrieval With Reranking ──',
-      "echo '=> add reranking for better precision'",
-      'vai query "A boy and the ocean" --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --model voyage-multimodal-3.5',
-      "echo '=> reranked results surface the most relevant books'",
+      'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+      'sleep 5 && mongosh --eval "db.runCommand({ ping: 1 })"',
+      'npm install -g voyageai-cli',
+      'vai config set mongodb-uri "mongodb://localhost:27017"',
+      'vai nano setup',
+      'vai embed "Puppy Preschool: Raising Your Puppy Right" --local --dimensions 1024',
+      'vai ingest --file books.jsonl --db mongodb_genai_devday_vs --collection books --field embedding --text-field title --local --dimensions 1024 --batch-size 10',
+      'vai index create --db mongodb_genai_devday_vs --collection books --field embedding --dimensions 1024 --similarity cosine',
+      'vai query "A man wearing a golden crown" --db mongodb_genai_devday_vs --collection books --model voyage-4-lite --no-rerank',
+      'vai query "A boy and the ocean" --db mongodb_genai_devday_vs --collection books --model voyage-4-lite',
+      'docker stop mongodb-atlas-local && docker rm mongodb-atlas-local',
     ],
+    setupGuide: {
+      title: 'Environment Setup',
+      description:
+        'Choose your MongoDB setup. Both options work identically with the VAI CLI — the Docker local image includes full Atlas Vector Search support.',
+      tabs: [
+        {
+          id: 'docker-local',
+          label: 'Docker (Local)',
+          steps: [
+            {
+              title: 'Start MongoDB Atlas Local',
+              description:
+                'The mongodb-atlas-local Docker image provides a single-node MongoDB instance with full Atlas Search and Vector Search support — no cloud account needed.',
+              commands: [
+                'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+                'sleep 5',
+                'mongosh --eval "db.runCommand({ ping: 1 })"',
+              ],
+            },
+            {
+              title: 'Install & Configure VAI CLI',
+              description: 'Install the CLI globally and point it at your local MongoDB instance.',
+              commands: [
+                'npm install -g voyageai-cli',
+                'vai config set mongodb-uri "mongodb://localhost:27017"',
+                'vai --version',
+              ],
+            },
+            {
+              title: 'Download Nano Model',
+              description:
+                'voyage-4-nano is an open-weight embedding model (~700 MB). It runs locally and generates 1024-dim vectors compatible with all Voyage 4 models.',
+              commands: ['vai nano setup', 'vai models --type embedding'],
+            },
+          ],
+        },
+        {
+          id: 'atlas-cloud',
+          label: 'Atlas (Cloud)',
+          steps: [
+            {
+              title: 'Create a Free MongoDB Atlas Cluster',
+              description:
+                'Sign up at mongodb.com/try and create a free M0 cluster. Copy the connection string from the Atlas UI (Database > Connect > Drivers).',
+              commands: [
+                '# 1. Go to https://www.mongodb.com/try',
+                '# 2. Create a free M0 cluster',
+                '# 3. Add your IP to the access list',
+                '# 4. Create a database user',
+                '# 5. Copy the connection string',
+              ],
+            },
+            {
+              title: 'Install & Configure VAI CLI',
+              description: 'Install the CLI globally and configure your Atlas connection string.',
+              commands: [
+                'npm install -g voyageai-cli',
+                'vai config set mongodb-uri "mongodb+srv://<username>:<password>@cluster.mongodb.net"',
+                'vai --version',
+              ],
+            },
+            {
+              title: 'Download Nano Model',
+              description:
+                'voyage-4-nano is an open-weight embedding model (~700 MB). It runs locally and generates 1024-dim vectors compatible with all Voyage 4 models.',
+              commands: ['vai nano setup', 'vai models --type embedding'],
+            },
+          ],
+        },
+        {
+          id: 'codespaces',
+          label: 'GitHub Codespaces',
+          steps: [
+            {
+              title: 'Launch a Codespace',
+              description:
+                'Open the workshop repo in GitHub Codespaces. The devcontainer includes Docker with mongodb-atlas-local and all dependencies pre-installed.',
+              commands: [
+                '# Click "Open in Codespaces" on the repo page:',
+                '# https://github.com/mongodb-developer/genai-devday-notebooks',
+                '# Or create one directly:',
+                'gh codespace create --repo mongodb-developer/genai-devday-notebooks --machine basicLinux32gb',
+              ],
+            },
+            {
+              title: 'Install VAI CLI in the Codespace',
+              description: 'MongoDB is already running on localhost:27017 inside the Codespace container.',
+              commands: [
+                'npm install -g voyageai-cli',
+                'vai config set mongodb-uri "mongodb://localhost:27017"',
+                'vai --version',
+              ],
+            },
+            {
+              title: 'Download Nano Model',
+              description:
+                'voyage-4-nano is an open-weight embedding model (~700 MB). It runs locally and generates 1024-dim vectors compatible with all Voyage 4 models.',
+              commands: ['vai nano setup', 'vai models --type embedding'],
+            },
+          ],
+        },
+      ],
+    },
     assets: {
       recordingOutput: 'vector-search-devday.gif',
       sitePreviewPath: '/demos/vector-search-devday.mp4',
@@ -1632,32 +1734,35 @@ search_results = list(collection.aggregate(pipeline))`,
         DOCS_URL,
         buildReadmeUrl('core-workflow'),
         'https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/',
+        'https://www.mongodb.com/docs/atlas/cli/current/atlas-cli-deploy-local/',
+        'https://mongodb-developer.github.io/vector-search-lab/',
       ],
       related: ['pipeline-end-to-end', 'two-stage-retrieval', 'what-is-an-embedding'],
     },
     social: {
-      headline: 'The MongoDB Developer Day vector search workshop, reimagined as a one-session VAI CLI workflow.',
+      headline: 'The MongoDB Developer Day vector search workshop — zero to semantic search in one terminal session.',
       linkedinText:
-        'Full Developer Day vector search workshop as a VAI CLI demo: multimodal embeddings with voyage-multimodal-3.5, Atlas ingestion, vector index creation, semantic search across book covers, pre-filters, and hybrid search. Every step is reproducible from the command line.',
+        'Full Developer Day vector search workshop as a VAI CLI demo: spin up local MongoDB via Docker, generate embeddings locally with voyage-4-nano (no API key), ingest into Atlas, create a vector index, and run semantic search. End-to-end setup to working vector search from the command line.',
       xText:
-        'MongoDB Developer Day vector search workshop as a VAI CLI workflow: multimodal embeddings, Atlas vector search, pre-filters, and hybrid search. Fully reproducible.',
-      hashtags: ['vai', 'voyageai', 'mongodb', 'vectorsearch', 'devday'],
-      callToAction: 'Run the full workshop from your terminal and compare it to the Python notebook.',
+        'MongoDB Developer Day workshop as a VAI CLI workflow: Docker-based local MongoDB, local embeddings with nano, Atlas vector search. Zero to semantic search from your terminal.',
+      hashtags: ['vai', 'voyageai', 'mongodb', 'vectorsearch', 'devday', 'nano', 'docker'],
+      callToAction: 'Run the full workshop end-to-end: Docker, local embeddings, Atlas vector search.',
     },
     underTheHood: {
-      vaiCommand: 'vai query "A man wearing a golden crown" --db mongodb_genai_devday_vs --collection books --model voyage-multimodal-3.5',
+      vaiCommand: 'vai query "A man wearing a golden crown" --db mongodb_genai_devday_vs --collection books --model voyage-4-lite',
       voyageApi: {
-        node: `// Step 1: Embed the query with voyage-multimodal-3.5
-const embedResponse = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+        node: `// Step 1: Embed the query with voyage-4-lite (shares nano's embedding space)
+const embedResponse = await fetch('https://api.voyageai.com/v1/embeddings', {
   method: 'POST',
   headers: {
     Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    inputs: [['A man wearing a golden crown']],
-    model: 'voyage-multimodal-3.5',
+    input: ['A man wearing a golden crown'],
+    model: 'voyage-4-lite',
     input_type: 'query',
+    output_dimension: 1024,
   }),
 });
 
@@ -1667,127 +1772,105 @@ const queryVector = data[0].embedding;`,
 
 vo = voyageai.Client()
 
-# Step 1: Embed the query with voyage-multimodal-3.5
-embedding = vo.multimodal_embed(
-    inputs=[["A man wearing a golden crown"]],
-    model="voyage-multimodal-3.5",
+# Step 1: Embed the query with voyage-4-lite (shares nano's embedding space)
+embedding = vo.embed(
+    texts=["A man wearing a golden crown"],
+    model="voyage-4-lite",
     input_type="query",
+    output_dimension=1024,
 )
 
 query_vector = embedding.embeddings[0]`,
-        curl: `# Step 1: Embed the query
-curl https://api.voyageai.com/v1/multimodal/embeddings \\
+        curl: `# Step 1: Embed the query with voyage-4-lite
+curl https://api.voyageai.com/v1/embeddings \\
   -H "Authorization: Bearer $VOYAGE_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "inputs": [["A man wearing a golden crown"]],
-    "model": "voyage-multimodal-3.5",
-    "input_type": "query"
+    "input": ["A man wearing a golden crown"],
+    "model": "voyage-4-lite",
+    "input_type": "query",
+    "output_dimension": 1024
   }'`,
       },
       voyageApiSteps: [
         {
-          label: 'Embed text with multimodal model',
+          label: 'Embed text locally with nano (no API call)',
           code: {
-            node: `const response = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
-  method: 'POST',
-  headers: {
-    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    inputs: [['Puppy Preschool: Raising Your Puppy Right']],
-    model: 'voyage-multimodal-3.5',
-    input_type: 'document',
-  }),
-});`,
-            python: `embedding = vo.multimodal_embed(
-    inputs=[["Puppy Preschool: Raising Your Puppy Right"]],
-    model="voyage-multimodal-3.5",
-    input_type="document",
-)`,
-            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
-  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "inputs": [["Puppy Preschool: Raising Your Puppy Right"]],
-    "model": "voyage-multimodal-3.5",
-    "input_type": "document"
-  }'`,
+            node: `// voyage-4-nano runs locally — no API key or network needed
+// The VAI CLI handles this with: vai embed "text" --local --dimensions 1024
+// Under the hood it loads the ONNX model and runs inference locally:
+
+import { NanoLocal } from 'vai/nano';
+const nano = new NanoLocal({ model: 'voyage-4-nano' });
+const embedding = await nano.embed(
+  'Puppy Preschool: Raising Your Puppy Right',
+  { dimensions: 1024, inputType: 'document' }
+);
+// => Float32Array(1024) — generated on your machine`,
+            python: `# voyage-4-nano runs locally — no API key or network needed
+# The VAI CLI handles this with: vai embed "text" --local --dimensions 1024
+# Equivalent Python with the open-weight model:
+
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("voyageai/voyage-4-nano")
+embedding = model.encode(
+    "Puppy Preschool: Raising Your Puppy Right",
+    output_value="sentence_embedding",
+    normalize_embeddings=True,
+)
+# => numpy array of 1024 dimensions`,
+            curl: `# No API call needed! voyage-4-nano runs locally.
+# Use the VAI CLI:
+vai embed "Puppy Preschool: Raising Your Puppy Right" --local --dimensions 1024
+
+# Or download the model from HuggingFace:
+# https://huggingface.co/voyageai/voyage-4-nano`,
           },
         },
         {
-          label: 'Embed an image (book cover)',
+          label: 'Embed search query via API (voyage-4-lite)',
           code: {
-            node: `import fetch from 'node-fetch';
-
-// Load image and send as base64 or URL
-const imageUrl = 'https://images.isbndb.com/covers/4318463482198.jpg';
-const response = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
+            node: `// For query-time embedding, use voyage-4-lite via API
+// It shares the same embedding space as nano
+const queryResponse = await fetch('https://api.voyageai.com/v1/embeddings', {
   method: 'POST',
   headers: {
     Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    inputs: [[{ image_url: imageUrl }]],
-    model: 'voyage-multimodal-3.5',
-    input_type: 'document',
-  }),
-});`,
-            python: `from PIL import Image
-import requests
-
-image_url = "https://images.isbndb.com/covers/4318463482198.jpg"
-image = Image.open(requests.get(image_url, stream=True).raw)
-
-embedding = vo.multimodal_embed(
-    inputs=[[image]],
-    model="voyage-multimodal-3.5",
-    input_type="document",
-)`,
-            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
-  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "inputs": [[{"image_url": "https://images.isbndb.com/covers/4318463482198.jpg"}]],
-    "model": "voyage-multimodal-3.5",
-    "input_type": "document"
-  }'`,
-          },
-        },
-        {
-          label: 'Embed the search query',
-          code: {
-            node: `const queryResponse = await fetch('https://api.voyageai.com/v1/multimodal/embeddings', {
-  method: 'POST',
-  headers: {
-    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    inputs: [['A man wearing a golden crown']],
-    model: 'voyage-multimodal-3.5',
+    input: ['A man wearing a golden crown'],
+    model: 'voyage-4-lite',
     input_type: 'query',
+    output_dimension: 1024,
   }),
 });
 
 const { data } = await queryResponse.json();
 const queryVector = data[0].embedding;`,
-            python: `query_embedding = vo.multimodal_embed(
-    inputs=[["A man wearing a golden crown"]],
-    model="voyage-multimodal-3.5",
+            python: `# For query-time embedding, use voyage-4-lite via API
+# It shares the same embedding space as nano
+import voyageai
+vo = voyageai.Client()
+
+query_embedding = vo.embed(
+    texts=["A man wearing a golden crown"],
+    model="voyage-4-lite",
     input_type="query",
+    output_dimension=1024,
 )
 
 query_vector = query_embedding.embeddings[0]`,
-            curl: `curl https://api.voyageai.com/v1/multimodal/embeddings \\
+            curl: `# For query-time embedding, use voyage-4-lite via API
+# It shares the same embedding space as nano
+curl https://api.voyageai.com/v1/embeddings \\
   -H "Authorization: Bearer $VOYAGE_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "inputs": [["A man wearing a golden crown"]],
-    "model": "voyage-multimodal-3.5",
-    "input_type": "query"
+    "input": ["A man wearing a golden crown"],
+    "model": "voyage-4-lite",
+    "input_type": "query",
+    "output_dimension": 1024
   }'`,
           },
         },
@@ -1920,11 +2003,11 @@ results = list(collection.aggregate(hybrid_pipeline))`,
       },
       explanations: {
         vaiCommand:
-          'This demo mirrors the full MongoDB Developer Day vector search workshop. Each vai command replaces a notebook cell: model discovery, multimodal embedding (text + images), Atlas ingestion, index creation, semantic search, and two-stage retrieval with reranking.',
+          'This demo mirrors the full MongoDB Developer Day vector search workshop end-to-end. Part 1 sets up the environment: a local MongoDB Atlas instance via Docker, the VAI CLI, and voyage-4-nano for local embeddings. Part 2 runs the workshop: ingest, index, search, and rerank. No cloud account needed for the database — everything runs locally except the lightweight query API call.',
         voyageApi:
-          'The multimodal embeddings API (voyage-multimodal-3.5) is the core of this workshop. It embeds both text and images into the same 1024-dimensional vector space, enabling cross-modal search: query with text, match against book cover images.',
+          'The key insight: voyage-4-nano (local, free) and voyage-4-lite (API, $0.02/1M tokens) share the same 1024-dim embedding space. Embed thousands of documents locally at zero cost, then run queries through the lightweight API. This hybrid local+API approach is the recommended pattern for cost-effective vector search.',
         mongoQuery:
-          'Atlas Vector Search powers the retrieval layer. The workshop progresses from basic vector search to pre-filtered queries (by year and page count), scalar quantization for storage efficiency, and hybrid search combining vector and full-text pipelines with rank fusion.',
+          'The local mongodb-atlas-local Docker image provides full Atlas Vector Search support including $vectorSearch aggregation, pre-filters, and hybrid search with $rankFusion — identical behavior to Atlas cloud. The workshop progresses from basic vector search to pre-filtered queries and hybrid search combining vector and full-text pipelines.',
       },
     },
   },
