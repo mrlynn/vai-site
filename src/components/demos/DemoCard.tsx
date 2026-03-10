@@ -345,43 +345,53 @@ export default function DemoCard({ demo }: DemoCardProps) {
             </Typography>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <Button
               variant="outlined"
+              size="small"
               href={`/demos/${demo.slug}`}
               sx={{
                 borderColor: palette.border,
                 color: palette.text,
+                py: 0.75,
+                px: 1.5,
+                minWidth: 0,
                 '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}10` },
               }}
             >
               View Demo
             </Button>
             <Button
-              variant="contained"
+              variant="text"
+              size="small"
               onClick={handleCopyCommands}
-              startIcon={<ContentCopyIcon />}
+              startIcon={<ContentCopyIcon sx={{ fontSize: 16 }} />}
               sx={{
-                bgcolor: palette.accent,
-                color: palette.bg,
-                '&:hover': { bgcolor: palette.accentLight },
+                color: palette.textDim,
+                py: 0.75,
+                px: 1.5,
+                minWidth: 0,
+                '&:hover': { color: palette.accent, bgcolor: `${palette.accent}10` },
               }}
             >
-              Copy Commands
+              Copy
             </Button>
             <Button
-              variant="outlined"
+              variant="text"
+              size="small"
               href={demo.source.repoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              startIcon={<OpenInNewIcon />}
+              startIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
               sx={{
-                borderColor: palette.border,
-                color: palette.text,
-                '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}10` },
+                color: palette.textDim,
+                py: 0.75,
+                px: 1.5,
+                minWidth: 0,
+                '&:hover': { color: palette.accent, bgcolor: `${palette.accent}10` },
               }}
             >
-              Source Tape
+              Source
             </Button>
           </Stack>
         </CardContent>
