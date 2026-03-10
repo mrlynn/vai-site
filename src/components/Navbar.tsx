@@ -41,6 +41,7 @@ const navItems = [
     label: 'Developer Tools',
     dropdown: [
       { label: 'CLI', href: '#cli-demo' },
+      { label: 'Operational Modes', href: '/modes' },
       { label: 'Demo Gallery', href: '/demos' },
       { label: 'MCP Server', href: '#mcp' },
       { label: 'Workflows', href: '/workflows' },
