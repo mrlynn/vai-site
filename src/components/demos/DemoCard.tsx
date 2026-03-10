@@ -71,7 +71,7 @@ export default function DemoCard({ demo }: DemoCardProps) {
         sx={{
           bgcolor: palette.bgCard,
           border: `1px solid ${palette.border}`,
-          borderRadius: 3,
+          borderRadius: 1.5,
           overflow: 'hidden',
           height: '100%',
           display: 'flex',
@@ -109,21 +109,6 @@ export default function DemoCard({ demo }: DemoCardProps) {
             overflow: 'hidden',
           }}
         >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              display: 'flex',
-              gap: 0.8,
-              zIndex: 2,
-            }}
-          >
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FF5F56' }} />
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FFBD2E' }} />
-            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#27C93F' }} />
-          </Box>
-
           {previewError ? (
             <Box
               sx={{

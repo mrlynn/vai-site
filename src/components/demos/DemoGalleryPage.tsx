@@ -128,7 +128,7 @@ export default function DemoGalleryPage() {
         <Box
           sx={{
             border: `1px solid ${palette.border}`,
-            borderRadius: 3,
+            borderRadius: 1.5,
             bgcolor: palette.bgSurface,
             p: { xs: 2, md: 3 },
             mb: 5,
@@ -221,7 +221,7 @@ export default function DemoGalleryPage() {
           <Box
             sx={{
               border: `1px dashed ${palette.border}`,
-              borderRadius: 3,
+              borderRadius: 1.5,
               bgcolor: palette.bgSurface,
               p: 5,
               textAlign: 'center',

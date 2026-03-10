@@ -272,7 +272,7 @@ export default function UnderTheHoodPanel({
       sx={{
         mt: 2,
         border: `1px solid ${palette.border}`,
-        borderRadius: 3,
+        borderRadius: 1.5,
         overflow: 'hidden',
         bgcolor: palette.bgSurface,
       }}

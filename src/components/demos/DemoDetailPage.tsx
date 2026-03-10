@@ -120,7 +120,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                   display: 'block',
                   width: '100%',
                   position: 'relative',
-                  borderRadius: 3,
+                  borderRadius: 1.5,
                   overflow: 'hidden',
                   mb: 3,
                   cursor: hasPreview ? 'zoom-in' : 'default',
@@ -257,7 +257,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                 sx={{
                   bgcolor: palette.bgCard,
                   border: `1px solid ${palette.border}`,
-                  borderRadius: 3,
+                  borderRadius: 1.5,
                   p: { xs: 2.5, md: 3 },
                   mb: 4,
                 }}
@@ -280,7 +280,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                 sx={{
                   bgcolor: palette.bgCard,
                   border: `1px solid ${palette.border}`,
-                  borderRadius: 3,
+                  borderRadius: 1.5,
                   p: { xs: 2.5, md: 3 },
                   mb: 4,
                 }}
@@ -302,7 +302,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                 sx={{
                   bgcolor: palette.bgCard,
                   border: `1px solid ${palette.border}`,
-                  borderRadius: 3,
+                  borderRadius: 1.5,
                   p: { xs: 2.5, md: 3 },
                   position: { md: 'sticky' },
                   top: { md: 100 },

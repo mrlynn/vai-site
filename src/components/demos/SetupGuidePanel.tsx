@@ -65,7 +65,7 @@ export default function SetupGuidePanel({ guide }: SetupGuidePanelProps) {
       sx={{
         bgcolor: palette.bgCard,
         border: `1px solid ${palette.border}`,
-        borderRadius: 3,
+        borderRadius: 1.5,
         p: { xs: 2.5, md: 3 },
         mb: 4,
       }}
