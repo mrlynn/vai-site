@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import SiteSearch from '@/components/SiteSearch';
 import StarIcon from '@mui/icons-material/Star';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { palette } from '@/theme/theme';
@@ -230,6 +231,9 @@ export default function Navbar() {
 
             <Box sx={{ flexGrow: isMobile ? 1 : 0 }} />
 
+            {/* Site search */}
+            {!isMobile && <SiteSearch />}
+
             {/* GitHub with stars */}
             <Box
               component="a"
@@ -291,12 +295,15 @@ export default function Navbar() {
             )}
 
             {isMobile && (
-              <IconButton
-                onClick={() => setDrawerOpen(true)}
-                sx={{ color: palette.textDim, ml: 1 }}
-              >
-                <MenuIcon />
-              </IconButton>
+              <>
+                <SiteSearch />
+                <IconButton
+                  onClick={() => setDrawerOpen(true)}
+                  sx={{ color: palette.textDim, ml: 0.5 }}
+                >
+                  <MenuIcon />
+                </IconButton>
+              </>
             )}
           </Toolbar>
         </Container>
