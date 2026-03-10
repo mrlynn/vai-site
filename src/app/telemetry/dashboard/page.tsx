@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import {
   Box,
-  Button,
   Chip,
   Container,
   Stack,
   Typography,
 } from '@mui/material';
+import ButtonLink from '@/components/ButtonLink';
 import Grid from '@mui/material/Grid2';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined';
@@ -140,8 +139,7 @@ export default function PublicTelemetryDashboardPage() {
                   </Typography>
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pt: 1 }}>
-                    <Button
-                      component={Link}
+                    <ButtonLink
                       href="/telemetry"
                       variant="contained"
                       sx={{
@@ -151,9 +149,8 @@ export default function PublicTelemetryDashboardPage() {
                       }}
                     >
                       Read telemetry policy
-                    </Button>
-                    <Button
-                      component={Link}
+                    </ButtonLink>
+                    <ButtonLink
                       href="https://docs.vaicli.com"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -168,7 +165,7 @@ export default function PublicTelemetryDashboardPage() {
                       }}
                     >
                       Open CLI docs
-                    </Button>
+                    </ButtonLink>
                   </Stack>
                 </Stack>
               </Grid>

@@ -1,14 +1,13 @@
 import { Metadata } from 'next';
-import Link from 'next/link';
 import {
   Box,
-  Button,
   Chip,
   Container,
   Divider,
   Stack,
   Typography,
 } from '@mui/material';
+import ButtonLink from '@/components/ButtonLink';
 import Grid from '@mui/material/Grid2';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
@@ -338,8 +337,7 @@ export default function TelemetryPage() {
                   </Typography>
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <Button
-                      component={Link}
+                    <ButtonLink
                       href="#controls"
                       variant="contained"
                       sx={{
@@ -350,9 +348,8 @@ export default function TelemetryPage() {
                       }}
                     >
                       See Controls
-                    </Button>
-                    <Button
-                      component={Link}
+                    </ButtonLink>
+                    <ButtonLink
                       href="#event-catalog"
                       variant="outlined"
                       sx={{
@@ -365,7 +362,7 @@ export default function TelemetryPage() {
                       }}
                     >
                       Explore Event Catalog
-                    </Button>
+                    </ButtonLink>
                   </Stack>
                 </Box>
               </Grid>
@@ -427,8 +424,7 @@ export default function TelemetryPage() {
                 The dashboard uses a dedicated public-safe route and shows only bounded aggregate trends such as activity, surfaces, grouped feature areas, platform health, and grouped reliability. Recent events, raw payloads, operational drilldowns, city-level geography, and other sparse slices remain private to the admin telemetry dashboard.
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ pt: 1 }}>
-                <Button
-                  component={Link}
+                <ButtonLink
                   href="/telemetry/dashboard"
                   variant="contained"
                   sx={{
@@ -440,7 +436,7 @@ export default function TelemetryPage() {
                   }}
                 >
                   Open Public Dashboard
-                </Button>
+                </ButtonLink>
                 <Typography sx={{ color: palette.textMuted, lineHeight: 1.7, maxWidth: 720 }}>
                   Use `/telemetry` for policy, controls, and methodology. Use `/telemetry/dashboard`
                   for the live delayed transparency view.
