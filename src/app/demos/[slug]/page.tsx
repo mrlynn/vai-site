@@ -66,7 +66,7 @@ export default async function DemoPage({ params }: PageProps) {
     step: demo.commands.map((command, index) => ({
       '@type': 'HowToStep',
       name: `Step ${index + 1}`,
-      text: command,
+      text: typeof command === 'string' ? command : command.value,
     })),
     tool: {
       '@type': 'SoftwareApplication',

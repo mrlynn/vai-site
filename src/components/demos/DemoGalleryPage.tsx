@@ -38,7 +38,10 @@ export default function DemoGalleryPage() {
         demo.summary.toLowerCase().includes(query) ||
         demo.categories.some((item) => item.toLowerCase().includes(query)) ||
         demo.prerequisites.some((item) => item.toLowerCase().includes(query)) ||
-        demo.commands.some((item) => item.toLowerCase().includes(query))
+        demo.commands.some((item) => {
+          const text = typeof item === 'string' ? item : item.value;
+          return text.toLowerCase().includes(query);
+        })
       );
     });
   }, [category, demos, search]);

@@ -56,7 +56,8 @@ export default function DemoCard({ demo }: DemoCardProps) {
   const hasPreview = !previewError;
 
   const handleCopyCommands = async () => {
-    await navigator.clipboard.writeText(demo.commands.join('\n'));
+    const commandTexts = demo.commands.map((c) => (typeof c === 'string' ? c : c.value));
+    await navigator.clipboard.writeText(commandTexts.join('\n'));
     setCopied(true);
   };
 
