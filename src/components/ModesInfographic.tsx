@@ -1,8 +1,24 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Box, Container, Typography } from '@mui/material';
+import { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
+import Link from 'next/link';
 import { palette } from '@/theme/theme';
+import ButtonLink from '@/components/ButtonLink';
 
 const MONO = "'Source Code Pro', 'SF Mono', 'Fira Code', monospace";
 
@@ -14,9 +30,12 @@ interface Mode {
   icon: string;
   tagline: string;
   description: string;
-  steps: { label: string; detail: string; icon: string }[];
+  steps: { label: string; detail: string; icon: string; copyable?: string }[];
   stat: { label: string; value: string; sub: string };
   cost: { label: string; value: string; sub: string };
+  cta?: { label: string; href: string };
+  bestFor: string;
+  offline: boolean;
 }
 
 const modes: Mode[] = [
@@ -30,13 +49,16 @@ const modes: Mode[] = [
     description:
       'Full RAG pipeline from terminal — ingest, chunk, embed, search, rerank.',
     steps: [
-      { label: 'vai pipeline ./docs/', detail: 'Reads & chunks files recursively', icon: '📂' },
+      { label: 'vai pipeline ./docs/', detail: 'Reads & chunks files recursively', icon: '📂', copyable: 'vai pipeline ./docs/' },
       { label: 'Voyage AI Embed', detail: 'Batch embedding with voyage-4-large', icon: '⚡' },
       { label: 'MongoDB Atlas Store', detail: 'Vectors + metadata persisted', icon: '🗄️' },
-      { label: 'vai query "..."', detail: 'Embed query → $vectorSearch → rerank', icon: '🔍' },
+      { label: 'vai query "..."', detail: 'Embed query → $vectorSearch → rerank', icon: '🔍', copyable: 'vai query "your question here"' },
     ],
     stat: { label: 'RTEB Score', value: '71.41', sub: 'voyage-4-large' },
     cost: { label: 'API Models', value: '4', sub: 'voyage-4 family' },
+    cta: { label: 'Try CLI demo', href: '/#cli-demo' },
+    bestFor: 'Scripting, CI/CD',
+    offline: false,
   },
   {
     id: 'local',
@@ -48,13 +70,16 @@ const modes: Mode[] = [
     description:
       'voyage-4-nano runs locally via HuggingFace. Shared embedding space with cloud models.',
     steps: [
-      { label: 'vai nano setup', detail: 'Downloads ONNX model once', icon: '⬇️' },
-      { label: 'vai pipeline --local', detail: 'CPU inference, no API call', icon: '💻' },
+      { label: 'vai nano setup', detail: 'Downloads ONNX model once', icon: '⬇️', copyable: 'vai nano setup' },
+      { label: 'vai pipeline --local', detail: 'CPU inference, no API call', icon: '💻', copyable: 'vai pipeline --local ./docs/' },
       { label: 'MongoDB Local/Atlas', detail: 'Works with Atlas CLI or free tier', icon: '🗄️' },
-      { label: 'vai query --local', detail: 'Cross-bridge: nano ↔ API compatible', icon: '🔗' },
+      { label: 'vai query --local', detail: 'Cross-bridge: nano ↔ API compatible', icon: '🔗', copyable: 'vai query --local "your question"' },
     ],
     stat: { label: 'Shared Space', value: '0.941', sub: 'cosine sim vs API' },
     cost: { label: 'API Cost', value: '$0', sub: 'indexing phase' },
+    cta: { label: 'See local demos', href: '/demos' },
+    bestFor: 'Privacy, no API keys',
+    offline: true,
   },
   {
     id: 'playground',
@@ -64,8 +89,9 @@ const modes: Mode[] = [
     icon: '◈',
     tagline: 'Explore. Visualize. Compare.',
     description:
-      '7-tab browser UI for embedding inspection, similarity comparison, benchmarking, and PCA/t-SNE space visualization.',
+      'Run vai playground to launch a 7-tab browser UI locally. Embedding inspection, similarity comparison, benchmarking, and PCA/t-SNE space visualization.',
     steps: [
+      { label: 'vai playground', detail: 'Launches local server at http://localhost:3000', icon: '🚀', copyable: 'vai playground' },
       { label: 'Embed Tab', detail: 'Generate & inspect raw vectors', icon: '🧮' },
       { label: 'Compare Tab', detail: 'Similarity scoring side-by-side', icon: '⚖️' },
       { label: 'Search Tab', detail: 'Vector search with live filters', icon: '🔎' },
@@ -73,6 +99,9 @@ const modes: Mode[] = [
     ],
     stat: { label: 'Playground Tabs', value: '7', sub: 'interactive views' },
     cost: { label: 'Framework', value: 'Vanilla JS', sub: 'zero-dependency UI' },
+    cta: { label: 'Run vai playground', href: '/#cli-demo' },
+    bestFor: 'Exploration, debugging',
+    offline: false,
   },
   {
     id: 'mcp',
@@ -84,13 +113,16 @@ const modes: Mode[] = [
     description:
       '10 MCP tools expose the full VAI pipeline to any MCP-compatible agent: Claude Desktop, Cursor, Windsurf, VS Code.',
     steps: [
-      { label: 'vai mcp-server', detail: 'stdio (local) or HTTP (team)', icon: '🔌' },
+      { label: 'vai mcp-server', detail: 'stdio (local) or HTTP (team)', icon: '🔌', copyable: 'vai mcp-server' },
       { label: 'vai_query / vai_search', detail: 'Agent calls retrieval tools', icon: '🤖' },
       { label: 'vai_embed / vai_rerank', detail: 'Embedding + re-ranking tools', icon: '⚡' },
       { label: 'vai_ingest / vai_explain', detail: 'Ingestion + education tools', icon: '📚' },
     ],
     stat: { label: 'MCP Tools', value: '10', sub: 'agent-accessible' },
     cost: { label: 'Clients', value: 'Any', sub: 'Claude, Cursor, etc.' },
+    cta: { label: 'Setup MCP', href: '/#mcp' },
+    bestFor: 'AI agents (Cursor, Claude)',
+    offline: false,
   },
   {
     id: 'desktop',
@@ -109,6 +141,9 @@ const modes: Mode[] = [
     ],
     stat: { label: 'Platform', value: 'Mac/Win/Lin', sub: 'Electron builds' },
     cost: { label: 'Auth', value: 'OS Keychain', sub: 'zero plaintext keys' },
+    cta: { label: 'Download Desktop', href: '/desktop' },
+    bestFor: 'Visual workflows',
+    offline: true,
   },
 ];
 
@@ -137,11 +172,11 @@ const modelBenchmarks = [
 ];
 
 const lessons = [
-  { icon: '📐', title: 'Know Your Chunking', desc: '5 strategies: fixed, sentence, paragraph, recursive, markdown' },
-  { icon: '🎯', title: 'Pick the Right Model', desc: 'Domain models for code/finance/law outperform general models' },
-  { icon: '🔗', title: 'Shared Space = Freedom', desc: 'Index cheap, query smart — no lock-in to one inference path' },
-  { icon: '⚡', title: 'Two-Stage Retrieval', desc: 'Embed → $vectorSearch → Rerank = precision at scale' },
-  { icon: '🤖', title: 'Expose as MCP Tools', desc: 'Knowledge bases become agent-accessible via 10 focused tools' },
+  { icon: '📐', title: 'Know Your Chunking', desc: '5 strategies: fixed, sentence, paragraph, recursive, markdown', href: '/demos' },
+  { icon: '🎯', title: 'Pick the Right Model', desc: 'Domain models for code/finance/law outperform general models', href: '/use-cases' },
+  { icon: '🔗', title: 'Shared Space = Freedom', desc: 'Index cheap, query smart — no lock-in to one inference path', href: '/shared-space' },
+  { icon: '⚡', title: 'Two-Stage Retrieval', desc: 'Embed → $vectorSearch → Rerank = precision at scale', href: '/demos' },
+  { icon: '🤖', title: 'Expose as MCP Tools', desc: 'Knowledge bases become agent-accessible via 10 focused tools', href: '/workflows' },
   { icon: '🛡️', title: 'Zero Infrastructure', desc: 'npm install -g. No auth, no hosting, no lock-in.' },
 ];
 
@@ -187,11 +222,11 @@ function PipelineNode({
 }) {
   const lit = animStep > idx;
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 72, maxWidth: 80 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: { xs: 52, md: 72 }, maxWidth: { xs: 60, md: 80 }, flexShrink: 0 }}>
       <Box
         sx={{
-          width: 44,
-          height: 44,
+          width: { xs: 36, md: 44 },
+          height: { xs: 36, md: 44 },
           borderRadius: '10px',
           border: `2px solid ${lit ? color : palette.border}`,
           bgcolor: lit ? `${color}18` : palette.bgCard,
@@ -246,8 +281,8 @@ function ModeCard({
         gap: 1,
         transition: 'all 0.2s',
         boxShadow: selected ? `0 0 16px ${mode.color}33` : 'none',
-        flex: 1,
-        minWidth: 120,
+        flex: '1 1 90px',
+        minWidth: 90,
         outline: 'none',
         fontFamily: 'inherit',
         '&:hover': { borderColor: mode.color },
@@ -288,16 +323,25 @@ function StepRow({
   color,
   delay,
 }: {
-  step: { label: string; detail: string; icon: string };
+  step: { label: string; detail: string; icon: string; copyable?: string };
   color: string;
   delay: number;
 }) {
   const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), delay);
     return () => clearTimeout(t);
   }, [delay]);
+
+  const handleCopy = () => {
+    if (step.copyable) {
+      navigator.clipboard.writeText(step.copyable);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
+  };
 
   return (
     <Box
@@ -315,21 +359,57 @@ function StepRow({
       }}
     >
       <Typography sx={{ fontSize: 16 }}>{step.icon}</Typography>
-      <Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color }}>{step.label}</Typography>
         <Typography sx={{ fontSize: 11, color: palette.textMuted, mt: 0.25 }}>{step.detail}</Typography>
       </Box>
+      {step.copyable && (
+        <Tooltip title={copied ? 'Copied!' : 'Copy command'}>
+          <IconButton
+            size="small"
+            onClick={handleCopy}
+            sx={{
+              color: copied ? palette.accent : palette.textMuted,
+              p: 0.5,
+              '&:hover': { color: color },
+            }}
+          >
+            {copied ? (
+              <CheckIcon sx={{ fontSize: 14 }} />
+            ) : (
+              <ContentCopyIcon sx={{ fontSize: 14 }} />
+            )}
+          </IconButton>
+        </Tooltip>
+      )}
     </Box>
   );
 }
 
 /* ─── Main Component ─── */
 
+const MODE_IDS = modes.map((m) => m.id);
+
 export default function ModesInfographic() {
   const [selected, setSelected] = useState(0);
   const [animStep, setAnimStep] = useState(0);
   const [tick, setTick] = useState(0);
+  const [installCopied, setInstallCopied] = useState(false);
   const mode = modes[selected];
+
+  // URL hash sync: read on mount, update when selected changes
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
+    const idx = MODE_IDS.indexOf(hash);
+    if (idx >= 0) setSelected(idx);
+  }, []);
+
+  useEffect(() => {
+    const id = modes[selected].id;
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', `${window.location.pathname}#${id}`);
+    }
+  }, [selected]);
 
   // Pipeline animation
   useEffect(() => {
@@ -351,6 +431,12 @@ export default function ModesInfographic() {
 
   const ssv = sharedSpaceValues[tick % sharedSpaceValues.length];
 
+  const handleInstallCopy = () => {
+    navigator.clipboard.writeText('npm install -g voyageai-cli');
+    setInstallCopied(true);
+    setTimeout(() => setInstallCopied(false), 1500);
+  };
+
   return (
     <Box sx={{ bgcolor: palette.bg, minHeight: '100vh', fontFamily: MONO, color: palette.text }}>
       {/* ── Header ── */}
@@ -361,7 +447,8 @@ export default function ModesInfographic() {
           px: { xs: 2, md: 3.5 },
           py: { xs: 2, md: 2.5 },
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 1.5,
@@ -388,7 +475,7 @@ export default function ModesInfographic() {
             <Box>
               <Typography
                 sx={{
-                  fontSize: 18,
+                  fontSize: { xs: 16, md: 18 },
                   fontWeight: 800,
                   letterSpacing: '0.02em',
                   background: `linear-gradient(135deg, ${palette.accent}, ${palette.blue})`,
@@ -405,53 +492,127 @@ export default function ModesInfographic() {
           </Box>
         </Box>
 
-        {/* Shared Space Live Badge */}
-        <Box
-          sx={{
-            bgcolor: palette.bgCard,
-            border: `1px solid ${palette.border}`,
-            borderRadius: '10px',
-            p: '8px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0.25,
-            minWidth: 220,
-          }}
-        >
-          <Typography sx={{ fontSize: 9, color: palette.textMuted, letterSpacing: '0.08em' }}>
-            SHARED EMBEDDING SPACE · LIVE VALIDATION
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box
-              sx={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                bgcolor: palette.accent,
-                boxShadow: `0 0 6px ${palette.accent}`,
-                animation: 'vai-pulse 1.5s infinite',
-              }}
-            />
-            <Typography sx={{ fontSize: 11, color: palette.text }}>{ssv.model}</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 800, color: palette.accent, ml: 'auto' }}>
-              {ssv.sim}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1.5, alignItems: { xs: 'stretch', sm: 'center' } }}>
+          {/* Install CTA */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              bgcolor: palette.bgCard,
+              border: `1px solid ${palette.border}`,
+              borderRadius: '10px',
+              px: 1.5,
+              py: 1,
+              minWidth: { xs: '100%', sm: 280 },
+            }}
+          >
+            <Typography sx={{ fontSize: 10, fontFamily: MONO, color: palette.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              npm install -g voyageai-cli
             </Typography>
+            <Tooltip title={installCopied ? 'Copied!' : 'Copy'}>
+              <IconButton size="small" onClick={handleInstallCopy} sx={{ color: palette.textMuted, p: 0.5 }}>
+                {installCopied ? <CheckIcon sx={{ fontSize: 16 }} /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
+              </IconButton>
+            </Tooltip>
           </Box>
-          <Box sx={{ height: 3, borderRadius: 2, bgcolor: palette.border, overflow: 'hidden' }}>
-            <Box
-              sx={{
-                height: '100%',
-                width: `${parseFloat(ssv.sim) * 100}%`,
-                background: `linear-gradient(90deg, ${palette.accent}, ${palette.blue})`,
-                transition: 'width 0.8s',
-              }}
-            />
+
+          {/* Shared Space Live Badge */}
+          <Box
+            sx={{
+              bgcolor: palette.bgCard,
+              border: `1px solid ${palette.border}`,
+              borderRadius: '10px',
+              p: '8px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.25,
+              minWidth: { xs: '100%', sm: 220 },
+            }}
+          >
+            <Typography sx={{ fontSize: 9, color: palette.textMuted, letterSpacing: '0.08em' }}>
+              SHARED EMBEDDING SPACE · LIVE VALIDATION
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: palette.accent,
+                  boxShadow: `0 0 6px ${palette.accent}`,
+                  animation: 'vai-pulse 1.5s infinite',
+                }}
+              />
+              <Typography sx={{ fontSize: 11, color: palette.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ssv.model}</Typography>
+              <Typography sx={{ fontSize: 13, fontWeight: 800, color: palette.accent, ml: 'auto', flexShrink: 0 }}>
+                {ssv.sim}
+              </Typography>
+            </Box>
+            <Box sx={{ height: 3, borderRadius: 2, bgcolor: palette.border, overflow: 'hidden' }}>
+              <Box
+                sx={{
+                  height: '100%',
+                  width: `${parseFloat(ssv.sim) * 100}%`,
+                  background: `linear-gradient(90deg, ${palette.accent}, ${palette.blue})`,
+                  transition: 'width 0.8s',
+                }}
+              />
+            </Box>
           </Box>
         </Box>
       </Box>
 
       {/* ── Body ── */}
       <Box sx={{ p: { xs: 2, md: 3.5 }, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        {/* Intro */}
+        <Typography sx={{ fontSize: { xs: 13, md: 14 }, color: palette.text, lineHeight: 1.6 }}>
+          <Box component="strong" sx={{ color: palette.accent }}>How do you want to run VAI?</Box> Pick a mode below to see its flow, commands, and next steps.
+        </Typography>
+
+        {/* I want to... decision guide */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: { xs: 0.75, md: 1 },
+            flexDirection: { xs: 'column', sm: 'row' },
+          }}
+        >
+          <Typography sx={{ fontSize: 10, color: palette.textMuted, alignSelf: 'center', mr: { xs: 0, sm: 0.5 } }}>
+            I want to…
+          </Typography>
+          {[
+            { label: 'prototype quickly', idx: 0 },
+            { label: 'run without API keys', idx: 1 },
+            { label: 'explore visually', idx: 2 },
+            { label: 'wire my AI assistant', idx: 3 },
+            { label: 'use a native app', idx: 4 },
+          ].map(({ label, idx }) => (
+            <Box
+              key={label}
+              component="button"
+              onClick={() => setSelected(idx)}
+              sx={{
+                fontSize: 10,
+                fontFamily: MONO,
+                color: selected === idx ? modes[idx].color : palette.textDim,
+                bgcolor: selected === idx ? `${modes[idx].color}18` : 'transparent',
+                border: `1px solid ${selected === idx ? modes[idx].color : palette.border}`,
+                borderRadius: '6px',
+                px: 1.25,
+                py: 0.5,
+                cursor: 'pointer',
+                outline: 'none',
+                whiteSpace: 'nowrap',
+                '&:hover': { borderColor: modes[idx].color, color: modes[idx].color },
+              }}
+            >
+              {label}
+            </Box>
+          ))}
+        </Box>
+
         {/* Mode Selector */}
         <Box>
           <Typography sx={{ fontSize: 9, color: palette.textMuted, letterSpacing: '0.1em', mb: 1 }}>
@@ -464,16 +625,58 @@ export default function ModesInfographic() {
           </Box>
         </Box>
 
-        {/* Main content row */}
-        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+        {/* Quick comparison table - hidden on very small screens */}
+        <Box sx={{ display: { xs: 'none', sm: 'block' }, overflowX: 'auto' }}>
+          <TableContainer
+            sx={{
+              bgcolor: palette.bgSurface,
+              border: `1px solid ${palette.border}`,
+              borderRadius: '12px',
+              '& .MuiTableCell-root': { borderColor: palette.border, fontSize: 10, py: 1, fontFamily: MONO },
+            }}
+          >
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Mode</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Best for</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Offline?</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Cost</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {modes.map((m, i) => (
+                  <TableRow
+                    key={m.id}
+                    onClick={() => setSelected(i)}
+                    sx={{
+                      cursor: 'pointer',
+                      bgcolor: selected === i ? `${m.color}12` : 'transparent',
+                      '&:hover': { bgcolor: `${m.color}0a` },
+                    }}
+                  >
+                    <TableCell sx={{ color: m.color, fontWeight: 600 }}>{m.label}</TableCell>
+                    <TableCell>{m.bestFor}</TableCell>
+                    <TableCell>{m.offline ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>{m.cost.sub}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+
+        {/* Main content row - stack on mobile */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2 }}>
           {/* Left: Mode Detail */}
           <Box
             sx={{
               flex: '1 1 260px',
+              minWidth: 0,
               bgcolor: palette.bgSurface,
               border: `1px solid ${mode.color}44`,
               borderRadius: '14px',
-              p: 2.25,
+              p: { xs: 1.75, md: 2.25 },
               display: 'flex',
               flexDirection: 'column',
               gap: 1.75,
@@ -482,10 +685,10 @@ export default function ModesInfographic() {
             }}
           >
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
-                <Typography sx={{ fontSize: 24, color: mode.color }}>{mode.icon}</Typography>
-                <Box>
-                  <Typography sx={{ fontWeight: 800, fontSize: 16, color: palette.text }}>{mode.label}</Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontSize: { xs: 20, md: 24 }, color: mode.color }}>{mode.icon}</Typography>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: { xs: 14, md: 16 }, color: palette.text }}>{mode.label}</Typography>
                   <Typography
                     sx={{
                       fontSize: 9,
@@ -503,7 +706,7 @@ export default function ModesInfographic() {
                   </Typography>
                 </Box>
               </Box>
-              <Typography sx={{ fontSize: 13, fontWeight: 700, color: mode.color, mb: 0.75 }}>
+              <Typography sx={{ fontSize: { xs: 12, md: 13 }, fontWeight: 700, color: mode.color, mb: 0.75 }}>
                 {mode.tagline}
               </Typography>
               <Typography sx={{ fontSize: 11, color: palette.textMuted, lineHeight: 1.6 }}>
@@ -511,8 +714,26 @@ export default function ModesInfographic() {
               </Typography>
             </Box>
 
+            {/* CTA */}
+            {mode.cta && (
+              <ButtonLink
+                href={mode.cta.href}
+                variant="contained"
+                size="small"
+                sx={{
+                  bgcolor: mode.color,
+                  color: mode.id === 'local' ? palette.bg : palette.bg,
+                  fontWeight: 700,
+                  alignSelf: 'flex-start',
+                  '&:hover': { bgcolor: mode.color, opacity: 0.9 },
+                }}
+              >
+                {mode.cta.label}
+              </ButtonLink>
+            )}
+
             {/* Stats row */}
-            <Box sx={{ display: 'flex', gap: 1.25 }}>
+            <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
               {[mode.stat, mode.cost].map((s, i) => (
                 <Box
                   key={i}
@@ -544,20 +765,20 @@ export default function ModesInfographic() {
           </Box>
 
           {/* Right: Pipeline + Stats */}
-          <Box sx={{ flex: '1 1 340px', display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+          <Box sx={{ flex: '1 1 300px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1.75 }}>
             {/* Pipeline Visualization */}
             <Box
               sx={{
                 bgcolor: palette.bgSurface,
                 border: `1px solid ${palette.border}`,
                 borderRadius: '14px',
-                p: 2.25,
+                p: { xs: 1.5, md: 2.25 },
               }}
             >
               <Typography sx={{ fontSize: 9, color: palette.textMuted, letterSpacing: '0.1em', mb: 1.75 }}>
                 RAG PIPELINE FLOW
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', overflowX: 'auto', pb: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', overflowX: 'auto', pb: 0.5, WebkitOverflowScrolling: 'touch' }}>
                 {pipelineNodes.map((node, i) => (
                   <Box
                     key={node.id}
@@ -632,6 +853,8 @@ export default function ModesInfographic() {
 
             {/* Cost Optimizer */}
             <Box
+              component={Link}
+              href="/shared-space"
               sx={{
                 bgcolor: `${palette.accent}0F`,
                 border: `1px solid ${palette.accent}44`,
@@ -640,6 +863,9 @@ export default function ModesInfographic() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1.5,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}18` },
               }}
             >
               <Typography sx={{ fontSize: 28, width: 40, textAlign: 'center' }}>💰</Typography>
@@ -673,31 +899,47 @@ export default function ModesInfographic() {
             THE REUSABLE LESSONS · VAI DESIGN PRINCIPLES
           </Typography>
           <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
-            {lessons.map((lesson, i) => (
-              <Box
-                key={i}
-                sx={{
-                  flex: '1 1 150px',
-                  bgcolor: palette.bgCard,
-                  border: `1px solid ${palette.border}`,
-                  borderRadius: '10px',
-                  p: '10px 12px',
-                  display: 'flex',
-                  gap: 1,
-                  alignItems: 'flex-start',
-                }}
-              >
-                <Typography sx={{ fontSize: 18 }}>{lesson.icon}</Typography>
-                <Box>
-                  <Typography sx={{ fontSize: 10, fontWeight: 700, color: palette.text, mb: 0.25 }}>
-                    {lesson.title}
-                  </Typography>
-                  <Typography sx={{ fontSize: 9, color: palette.textMuted, lineHeight: 1.4 }}>
-                    {lesson.desc}
-                  </Typography>
+            {lessons.map((lesson, i) => {
+              const cardSx = {
+                flex: '1 1 140px',
+                minWidth: { xs: '100%', sm: 140 },
+                bgcolor: palette.bgCard,
+                border: `1px solid ${palette.border}`,
+                borderRadius: '10px',
+                p: '10px 12px',
+                display: 'flex',
+                gap: 1,
+                alignItems: 'flex-start',
+                ...(lesson.href && {
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  textDecoration: 'none',
+                  '&:hover': { borderColor: palette.accent, bgcolor: `${palette.accent}0a` },
+                }),
+              };
+              const content = (
+                <>
+                  <Typography sx={{ fontSize: 18 }}>{lesson.icon}</Typography>
+                  <Box>
+                    <Typography sx={{ fontSize: 10, fontWeight: 700, color: palette.text, mb: 0.25 }}>
+                      {lesson.title}
+                    </Typography>
+                    <Typography sx={{ fontSize: 9, color: palette.textMuted, lineHeight: 1.4 }}>
+                      {lesson.desc}
+                    </Typography>
+                  </Box>
+                </>
+              );
+              return lesson.href ? (
+                <Box key={i} component={Link} href={lesson.href} sx={cardSx}>
+                  {content}
                 </Box>
-              </Box>
-            ))}
+              ) : (
+                <Box key={i} sx={cardSx}>
+                  {content}
+                </Box>
+              );
+            })}
           </Box>
         </Box>
       </Box>

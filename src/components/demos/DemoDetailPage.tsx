@@ -27,6 +27,7 @@ import CommandBlock from '@/components/use-cases/CommandBlock';
 import DemoCard from '@/components/demos/DemoCard';
 import DemoSharePanel from '@/components/demos/DemoSharePanel';
 import SetupGuidePanel from '@/components/demos/SetupGuidePanel';
+import LabCompanionPanel from '@/components/demos/LabCompanionPanel';
 import UnderTheHoodPanel from '@/components/demos/UnderTheHoodPanel';
 
 interface DemoDetailPageProps {
@@ -275,6 +276,8 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
               </Box>
 
               {demo.setupGuide && <SetupGuidePanel guide={demo.setupGuide} />}
+
+              {demo.labCompanion && <LabCompanionPanel lab={demo.labCompanion} />}
 
               <Box
                 sx={{

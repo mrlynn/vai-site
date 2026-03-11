@@ -25,6 +25,21 @@ export interface DemoLinks {
   related: string[];
 }
 
+export interface LabStepMapping {
+  labSection: string;
+  labStep?: string;
+  vaiCommand: string;
+  note?: string;
+}
+
+export interface LabCompanion {
+  labUrl: string;
+  labTitle: string;
+  intro: string;
+  mappings: LabStepMapping[];
+  takeaway?: string;
+}
+
 export interface DemoSocial {
   headline: string;
   linkedinText: string;
@@ -92,6 +107,7 @@ export interface DemoData {
   environment: DemoEnvironment;
   commands: string[];
   setupGuide?: DemoSetupGuide;
+  labCompanion?: LabCompanion;
   assets: DemoAssets;
   source: DemoSource;
   links: DemoLinks;
@@ -1584,7 +1600,7 @@ search_results = list(collection.aggregate(pipeline))`,
     slug: 'vector-search-devday',
     title: 'Vector Search Developer Day (VAI Edition)',
     summary:
-      'The complete MongoDB Developer Day vector search workshop reimagined as a VAI CLI workflow: set up a local MongoDB Atlas instance, install the CLI, generate local embeddings with voyage-4-nano, create a vector index, and run semantic search — end to end from the command line.',
+      'The complete MongoDB Developer Day vector search workshop reimagined as a VAI CLI workflow. Use it as a backup during the Vector Search: Beginner to Pro lab or afterward to reinforce concepts: set up local MongoDB, install the CLI, generate embeddings with voyage-4-nano, create a vector index, and run semantic search — end to end from the command line.',
     categories: ['Pipeline', 'MongoDB Atlas', 'Embeddings', 'Vector Search', 'Local Embeddings', 'Hybrid Search', 'Docker'],
     published: true,
     featured: true,
@@ -1720,6 +1736,64 @@ search_results = list(collection.aggregate(pipeline))`,
           ],
         },
       ],
+    },
+    labCompanion: {
+      labUrl: 'https://mongodb-developer.github.io/vector-search-lab/',
+      labTitle: 'Vector Search: Beginner to Pro',
+      intro:
+        'This demo mirrors the full MongoDB Developer Day vector search workshop. Use it as a backup reference during the lab (if you get stuck or want to see the CLI equivalent) or afterward to reinforce concepts with a single-terminal workflow.',
+      mappings: [
+        {
+          labSection: '20 Dev Environment',
+          labStep: 'Jupyter setup',
+          vaiCommand: 'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+          note: 'Same local MongoDB. VAI uses the terminal instead of notebooks.',
+        },
+        {
+          labSection: '30 Import Data',
+          labStep: 'Import books into mongodb_genai_devday_vs.books',
+          vaiCommand: 'vai ingest --file books.jsonl --db mongodb_genai_devday_vs --collection books ...',
+          note: 'Lab uses Python + preloaded data. VAI ingests from JSONL and embeds in one step.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Step 3: Generate embeddings',
+          vaiCommand: 'vai embed "..." --local --dimensions 1024',
+          note: 'Lab uses voyage-multimodal-3 (images). VAI uses voyage-4-nano (text, local). Same 1024-dim space.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Step 4: Add embeddings to data',
+          vaiCommand: 'vai ingest ... --local',
+          note: 'Combined with import. Batch-embeds each document and writes to Atlas.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Step 5: Create vector index',
+          vaiCommand: 'vai index create --db mongodb_genai_devday_vs --collection books --field embedding --dimensions 1024',
+          note: 'Same $vectorSearch index definition. VAI creates it via CLI.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Step 6: Run vector search queries',
+          vaiCommand: 'vai query "A man wearing a golden crown" --db mongodb_genai_devday_vs --collection books --model voyage-4-lite',
+          note: 'Same $vectorSearch aggregation. VAI embeds the query, runs the pipeline, and prints results.',
+        },
+        {
+          labSection: '50 Optimizing',
+          labStep: 'Pre-filtering',
+          vaiCommand: 'vai index create ... (supports filter fields)',
+          note: 'See Under the Hood for the filter field in the index definition. vai query supports pre-filters.',
+        },
+        {
+          labSection: '60 Other Techniques',
+          labStep: 'Hybrid search',
+          vaiCommand: 'See mongoQuery in Under the Hood',
+          note: 'The $rankFusion pipeline combines vector and full-text search. VAI exposes this in advanced workflows.',
+        },
+      ],
+      takeaway:
+        'The lab teaches the concepts (embeddings, $vectorSearch, pre-filters, hybrid). This VAI demo gives you the same workflow in a reproducible CLI form. Run both to reinforce the mental model: Python for exploration, VAI for automation and demos.',
     },
     assets: {
       recordingOutput: 'vector-search-devday.gif',
