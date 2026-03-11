@@ -318,13 +318,18 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                   The full walkthrough is included here so anyone can replay the demo exactly as published.
                 </Typography>
 
-                {demo.commands.map((command, index) => (
-                  <CommandBlock
-                    key={`${demo.slug}-${index}`}
-                    command={command}
-                    accent={index === 0 ? palette.accent : palette.blue}
-                  />
-                ))}
+                {demo.commands.map((step, index) => {
+                  const isInput = typeof step === 'object' && step.type === 'input';
+                  const command = typeof step === 'string' ? step : step.value;
+                  return (
+                    <CommandBlock
+                      key={`${demo.slug}-${index}`}
+                      command={command}
+                      variant={isInput ? 'input' : 'shell'}
+                      accent={index === 0 ? palette.accent : palette.blue}
+                    />
+                  );
+                })}
               </Box>
             </Grid>
           </Grid>

@@ -9,9 +9,17 @@ interface CommandBlockProps {
   command: string;
   output?: string;
   accent?: string;
+  /** When 'input', shows ">" instead of "$" to indicate user input within an interactive app (e.g. vai chat) */
+  variant?: 'shell' | 'input';
 }
 
-export default function CommandBlock({ command, output, accent = '#00D4AA' }: CommandBlockProps) {
+export default function CommandBlock({
+  command,
+  output,
+  accent = '#00D4AA',
+  variant = 'shell',
+}: CommandBlockProps) {
+  const promptChar = variant === 'input' ? '>' : '$';
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -41,10 +49,25 @@ export default function CommandBlock({ command, output, accent = '#00D4AA' }: Co
           borderBottom: `1px solid ${palette.border}`,
         }}
       >
-        <Box sx={{ display: 'flex', gap: 0.8 }}>
-          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FF5F56' }} />
-          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FFBD2E' }} />
-          <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#27C93F' }} />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.8 }}>
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FF5F56' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#FFBD2E' }} />
+            <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: '#27C93F' }} />
+          </Box>
+          {variant === 'input' && (
+            <Typography
+              component="span"
+              sx={{
+                fontSize: '0.7rem',
+                color: palette.textMuted,
+                fontWeight: 600,
+                ml: 0.5,
+              }}
+            >
+              Chat input
+            </Typography>
+          )}
         </Box>
         <Tooltip title="Copy command">
           <IconButton
@@ -74,7 +97,7 @@ export default function CommandBlock({ command, output, accent = '#00D4AA' }: Co
               wordBreak: 'break-all',
             }}
           >
-            <Box component="span" sx={{ color: accent, mr: 1 }}>$</Box>
+            <Box component="span" sx={{ color: accent, mr: 1 }}>{promptChar}</Box>
             <Box component="span" sx={{ color: palette.text }}>{line}</Box>
           </Typography>
         ))}

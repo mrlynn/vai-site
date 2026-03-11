@@ -96,6 +96,9 @@ export interface DemoSetupGuide {
   tabs: DemoSetupTab[];
 }
 
+/** Shell command (shown with $) or user input within an interactive app (e.g. vai chat prompt) */
+export type DemoCommandStep = string | { type: 'input'; value: string };
+
 export interface DemoData {
   slug: string;
   title: string;
@@ -105,7 +108,7 @@ export interface DemoData {
   featured: boolean;
   prerequisites: string[];
   environment: DemoEnvironment;
-  commands: string[];
+  commands: DemoCommandStep[];
   setupGuide?: DemoSetupGuide;
   labCompanion?: LabCompanion;
   assets: DemoAssets;
@@ -359,9 +362,9 @@ print(result.embeddings[0])`,
       'vai ingest --file "$DEMO_FILE" --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --text-field text --local --batch-size 3',
       'vai index create --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --field embedding --dimensions 1024',
       'vai chat --db "$DEMO_DB" --collection "$DEMO_COLLECTION" --local --llm-provider ollama --llm-model "$OLLAMA_MODEL" --llm-base-url http://localhost:11434 --no-history --no-stream',
-      'Which models are used in this demo, and what benefits does the document mention?',
-      'What is the workflow from ingest to exit?',
-      '/quit',
+      { type: 'input', value: 'Which models are used in this demo, and what benefits does the document mention?' },
+      { type: 'input', value: 'What is the workflow from ingest to exit?' },
+      { type: 'input', value: '/quit' },
     ],
     assets: {
       recordingOutput: 'ollama-nano-chat.gif',
@@ -2082,6 +2085,286 @@ results = list(collection.aggregate(hybrid_pipeline))`,
           'The key insight: voyage-4-nano (local, free) and voyage-4-lite (API, $0.02/1M tokens) share the same 1024-dim embedding space. Embed thousands of documents locally at zero cost, then run queries through the lightweight API. This hybrid local+API approach is the recommended pattern for cost-effective vector search.',
         mongoQuery:
           'The local mongodb-atlas-local Docker image provides full Atlas Vector Search support including $vectorSearch aggregation, pre-filters, and hybrid search with $rankFusion — identical behavior to Atlas cloud. The workshop progresses from basic vector search to pre-filtered queries and hybrid search combining vector and full-text pipelines.',
+      },
+    },
+  },
+  {
+    slug: 'rag-devday',
+    title: 'RAG Developer Day (VAI Edition)',
+    summary:
+      'The complete MongoDB Developer Day RAG lab reimagined as a VAI CLI workflow. Use it as a backup during the Build RAG Applications using MongoDB lab or afterward to reinforce concepts: ingest documentation chunks, create a vector index, and run RAG chat — end to end from the command line.',
+    categories: ['RAG', 'MongoDB Atlas', 'Embeddings', 'Chat', 'Pipeline', 'Docker'],
+    published: true,
+    featured: true,
+    prerequisites: [
+      'Docker installed (for local MongoDB Atlas) or access to a MongoDB Atlas cluster.',
+      'Node.js >= 18 installed.',
+      'VAI CLI installed globally: `npm install -g voyageai-cli`.',
+      'VOYAGE_API_KEY for embeddings and chat (free tier at voyageai.com), or another configured LLM provider.',
+    ],
+    environment: {
+      requiresApiKey: true,
+      requiresMongoDbAtlas: true,
+      requiresOllama: false,
+      worksOffline: false,
+      platformNotes: [
+        'Step 0 sets up a local MongoDB Atlas instance via Docker — no cloud account needed for the database.',
+        'Embeddings use the Voyage AI API (voyage-4 by default).',
+        'vai chat uses your configured LLM provider for generation.',
+      ],
+    },
+    commands: [
+      'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+      'sleep 5 && mongosh --eval "db.runCommand({ ping: 1 })"',
+      'npm install -g voyageai-cli',
+      'vai config set mongodb-uri "mongodb://localhost:27017"',
+      'vai ingest --file docs/demos/rag-devday-docs.jsonl --db mongodb_genai_devday_rag --collection knowledge_base --field embedding --text-field text --batch-size 5',
+      'vai index create --db mongodb_genai_devday_rag --collection knowledge_base --field embedding --dimensions 1024 --similarity cosine',
+      'vai chat --db mongodb_genai_devday_rag --collection knowledge_base --no-history --no-stream',
+      { type: 'input', value: 'What are some best practices for data backups in MongoDB?' },
+      { type: 'input', value: 'How to resolve alerts in MongoDB?' },
+      { type: 'input', value: '/quit' },
+      'docker stop mongodb-atlas-local && docker rm mongodb-atlas-local',
+    ],
+    setupGuide: {
+      title: 'Environment Setup',
+      description:
+        'Choose your MongoDB setup. Both options work identically with the VAI CLI — the Docker local image includes full Atlas Vector Search support.',
+      tabs: [
+        {
+          id: 'docker-local',
+          label: 'Docker (Local)',
+          steps: [
+            {
+              title: 'Start MongoDB Atlas Local',
+              description:
+                'The mongodb-atlas-local Docker image provides a single-node MongoDB instance with full Atlas Search and Vector Search support — no cloud account needed.',
+              commands: [
+                'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+                'sleep 5',
+                'mongosh --eval "db.runCommand({ ping: 1 })"',
+              ],
+            },
+            {
+              title: 'Install & Configure VAI CLI',
+              description: 'Install the CLI globally and point it at your local MongoDB instance.',
+              commands: [
+                'npm install -g voyageai-cli',
+                'vai config set mongodb-uri "mongodb://localhost:27017"',
+                'vai --version',
+              ],
+            },
+          ],
+        },
+        {
+          id: 'atlas-cloud',
+          label: 'Atlas (Cloud)',
+          steps: [
+            {
+              title: 'Create a Free MongoDB Atlas Cluster',
+              description:
+                'Sign up at mongodb.com/try and create a free M0 cluster. Copy the connection string from the Atlas UI (Database > Connect > Drivers).',
+              commands: [
+                '# 1. Go to https://www.mongodb.com/try',
+                '# 2. Create a free M0 cluster',
+                '# 3. Add your IP to the access list',
+                '# 4. Create a database user',
+                '# 5. Copy the connection string',
+              ],
+            },
+            {
+              title: 'Install & Configure VAI CLI',
+              description: 'Install the CLI globally and configure your Atlas connection string.',
+              commands: [
+                'npm install -g voyageai-cli',
+                'vai config set mongodb-uri "mongodb+srv://<username>:<password>@cluster.mongodb.net"',
+                'vai --version',
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    labCompanion: {
+      labUrl: 'https://mongodb-developer.github.io/ai-rag-lab/',
+      labTitle: 'Build RAG Applications using MongoDB',
+      intro:
+        'This demo mirrors the full MongoDB Developer Day RAG lab. Use it as a backup reference during the lab (if you get stuck or want to see the CLI equivalent) or afterward to reinforce concepts with a single-terminal workflow.',
+      mappings: [
+        {
+          labSection: '20 Dev Environment',
+          labStep: 'Setup prerequisites',
+          vaiCommand: 'docker run -d --name mongodb-atlas-local -p 27017:27017 mongodb/mongodb-atlas-local:latest',
+          note: 'Same local MongoDB. VAI uses the terminal instead of Jupyter notebooks.',
+        },
+        {
+          labSection: '30 Prepare the Data',
+          labStep: 'Step 2: Load the dataset',
+          vaiCommand: 'vai ingest --file docs/demos/rag-devday-docs.jsonl ...',
+          note: 'Lab loads mongodb_docs.json. VAI ingests from JSONL. Use the full workshop data for production.',
+        },
+        {
+          labSection: '30 Prepare the Data',
+          labStep: 'Step 3: Chunk and embed',
+          vaiCommand: 'vai ingest ... --field embedding --text-field text',
+          note: 'Lab uses RecursiveCharacterTextSplitter + voyage-context-3. VAI chunks and embeds in one step with voyage-4.',
+        },
+        {
+          labSection: '30 Prepare the Data',
+          labStep: 'Step 4: Ingest into MongoDB',
+          vaiCommand: 'vai ingest --db mongodb_genai_devday_rag --collection knowledge_base ...',
+          note: 'Same db and collection. VAI writes embedded chunks directly.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Create vector index',
+          vaiCommand: 'vai index create --db mongodb_genai_devday_rag --collection knowledge_base --field embedding --dimensions 1024',
+          note: 'Same vector index definition. 1024 dimensions for voyage-4.',
+        },
+        {
+          labSection: '40 Perform Vector Search',
+          labStep: 'Vector search queries',
+          vaiCommand: 'vai chat --db mongodb_genai_devday_rag --collection knowledge_base',
+          note: 'vai chat embeds the query, runs $vectorSearch, retrieves context, and passes to the LLM.',
+        },
+        {
+          labSection: '50 Build RAG App',
+          labStep: 'Step 7: Build the RAG application',
+          vaiCommand: 'vai chat ... (create_prompt + generate_answer in one command)',
+          note: 'Lab builds create_prompt and generate_answer. vai chat does both: retrieve context, assemble prompt, call LLM.',
+        },
+        {
+          labSection: '50 Build RAG App',
+          labStep: 'Add reranking',
+          vaiCommand: 'vai chat ... (reranking enabled by default)',
+          note: 'vai chat uses reranking when available. Use --no-rerank to compare.',
+        },
+        {
+          labSection: '60 Add Memory',
+          labStep: 'Step 8: Add memory',
+          vaiCommand: 'vai chat (omit --no-history for session memory)',
+          note: 'vai chat persists sessions. Use vai chat --session <id> to resume. The lab stores history in MongoDB.',
+        },
+      ],
+      takeaway:
+        'The lab teaches RAG from first principles: chunk, embed, store, index, retrieve, prompt, generate. This VAI demo gives you the same workflow in a reproducible CLI form. Run both to reinforce the mental model: Python for exploration, VAI for automation and demos.',
+    },
+    assets: {
+      recordingOutput: 'rag-devday.gif',
+      sitePreviewPath: '/demos/rag-devday.mp4',
+    },
+    source: {
+      tapePath: 'docs/demos/rag-devday.tape',
+      repoUrl: buildTapeRepoUrl('docs/demos/rag-devday.tape'),
+    },
+    links: {
+      docs: [
+        DOCS_URL,
+        buildReadmeUrl('core-workflow'),
+        'https://www.mongodb.com/docs/atlas/atlas-vector-search/vector-search-stage/',
+        'https://mongodb-developer.github.io/ai-rag-lab/',
+      ],
+      related: ['ollama-nano-chat', 'pipeline-end-to-end', 'two-stage-retrieval'],
+    },
+    social: {
+      headline: 'The MongoDB Developer Day RAG lab — zero to documentation chatbot in one terminal session.',
+      linkedinText:
+        'Full Developer Day RAG lab as a VAI CLI demo: ingest MongoDB docs, create a vector index, and run RAG chat. End-to-end setup to working documentation chatbot from the command line.',
+      xText:
+        'MongoDB Developer Day RAG lab as a VAI CLI workflow: ingest, index, chat. Zero to documentation chatbot from your terminal.',
+      hashtags: ['vai', 'voyageai', 'mongodb', 'rag', 'devday', 'vectorsearch'],
+      callToAction: 'Run the full RAG lab end-to-end: Docker, ingest, chat.',
+    },
+    underTheHood: {
+      vaiCommand: 'vai chat --db mongodb_genai_devday_rag --collection knowledge_base',
+      voyageApi: {
+        node: `// Step 1: Embed the query
+const embedResponse = await fetch('https://api.voyageai.com/v1/embeddings', {
+  method: 'POST',
+  headers: {
+    Authorization: \`Bearer \${process.env.VOYAGE_API_KEY}\`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    input: userQuery,
+    model: 'voyage-4',
+    input_type: 'query',
+  }),
+});
+
+const { data } = await embedResponse.json();
+const queryVector = data[0].embedding;`,
+        python: `import voyageai
+
+vo = voyageai.Client()
+embedding = vo.embed(
+    texts=[user_query],
+    model="voyage-4",
+    input_type="query",
+)
+query_vector = embedding.embeddings[0]`,
+        curl: `curl https://api.voyageai.com/v1/embeddings \\
+  -H "Authorization: Bearer $VOYAGE_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "input": ["What are some best practices for data backups?"],
+    "model": "voyage-4",
+    "input_type": "query"
+  }'`,
+      },
+      mongoQuery: {
+        node: `const pipeline = [
+  {
+    $vectorSearch: {
+      index: 'vector_index',
+      path: 'embedding',
+      queryVector,
+      numCandidates: 150,
+      limit: 5,
+    },
+  },
+  {
+    $project: {
+      _id: 0,
+      text: 1,
+      source: 1,
+      score: { $meta: 'vectorSearchScore' },
+    },
+  },
+];
+
+const results = await collection.aggregate(pipeline).toArray();
+// Context is passed to LLM with the user query`,
+        python: `pipeline = [
+    {
+        "$vectorSearch": {
+            "index": "vector_index",
+            "path": "embedding",
+            "queryVector": query_vector,
+            "numCandidates": 150,
+            "limit": 5,
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,
+            "text": 1,
+            "source": 1,
+            "score": {"$meta": "vectorSearchScore"},
+        }
+    },
+]
+
+results = list(collection.aggregate(pipeline))
+# Context is passed to LLM with the user query`,
+      },
+      explanations: {
+        vaiCommand:
+          'vai chat is the RAG entrypoint. It embeds your question, runs vector search, retrieves the top chunks, assembles a prompt with context, and calls your configured LLM to generate an answer.',
+        voyageApi:
+          'The embeddings API converts the user query into a vector. At ingest time, documents were embedded with input_type document. At query time, use input_type query so the vector is optimized for search.',
+        mongoQuery:
+          'The $vectorSearch stage finds the most semantically similar chunks. numCandidates over-samples before returning the top limit. The retrieved text becomes the context for the LLM prompt.',
       },
     },
   },
