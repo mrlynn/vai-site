@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import ButtonLink from '@/components/ButtonLink';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
@@ -83,7 +83,7 @@ export default function PublicTelemetryDashboardPage() {
             <Grid container spacing={4} sx={{ position: 'relative' }}>
               <Grid size={{ xs: 12, lg: 8 }}>
                 <Stack spacing={2}>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
                     <Chip
                       icon={<VisibilityOutlinedIcon sx={{ color: `${palette.accent} !important` }} />}
                       label="Public transparency dashboard"

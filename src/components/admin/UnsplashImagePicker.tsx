@@ -94,11 +94,13 @@ export default function UnsplashImagePicker({
       onClose={onClose}
       fullWidth
       maxWidth="lg"
-      PaperProps={{
-        sx: {
-          bgcolor: palette.bgSurface,
-          borderRadius: 2,
-          border: `1px solid ${palette.border}`,
+      slotProps={{
+        paper: {
+          sx: {
+            bgcolor: palette.bgSurface,
+            borderRadius: 2,
+            border: `1px solid ${palette.border}`,
+          },
         },
       }}
     >
@@ -168,7 +170,7 @@ export default function UnsplashImagePicker({
         <Box sx={{ mt: 2, maxHeight: 420, overflowY: 'auto' }}>
           <Grid container spacing={1.5}>
             {images.map((img) => (
-              <Grid item xs={6} sm={4} md={3} key={img.id}>
+              <Grid size={{ xs: 6, sm: 4, md: 3 }} key={img.id}>
                 <Card
                   sx={{
                     bgcolor: palette.bgCard,

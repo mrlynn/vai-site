@@ -397,8 +397,8 @@ export default function NewsletterIssueEditorPage() {
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-              >
+               
+               sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
                 <TextField
                   label="Theme"
                   size="small"
@@ -419,7 +419,7 @@ export default function NewsletterIssueEditorPage() {
                   size="small"
                   value={publishDate}
                   onChange={(e) => setPublishDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
                 <TextField
                   label="Status"
@@ -446,7 +446,7 @@ export default function NewsletterIssueEditorPage() {
                   flexWrap: 'wrap',
                 }}
               >
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <Button
                     size="small"
                     variant="outlined"
@@ -463,7 +463,7 @@ export default function NewsletterIssueEditorPage() {
                     {generating ? 'Generating…' : 'Generate full issue with AI'}
                   </Button>
                 </Stack>
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                   <Chip
                     label={publishDryRun ? 'Dry run' : 'Live send'}
                     size="small"

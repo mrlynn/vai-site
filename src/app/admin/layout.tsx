@@ -233,10 +233,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </ListItemIcon>
                     <ListItemText
                       primary={item.label}
-                      primaryTypographyProps={{
-                        fontSize: 13,
-                        fontWeight: selected ? 700 : 500,
-                        color: selected ? palette.accent : palette.textMuted,
+                      slotProps={{
+                        primary: {
+                          sx: {
+                            fontSize: 13,
+                            fontWeight: selected ? 700 : 500,
+                            color: selected ? palette.accent : palette.textMuted,
+                          },
+                        },
                       }}
                     />
                   </ListItemButton>

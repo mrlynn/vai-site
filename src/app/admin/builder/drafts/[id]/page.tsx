@@ -574,7 +574,7 @@ export default function DraftEditorPage() {
       sx={{ py: 2 }}
       onClick={hideSelectionMenu}
     >
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center',  mb: 2 }}>
         <IconButton
           href="/admin/builder"
           sx={{ color: palette.textMuted }}
@@ -725,7 +725,7 @@ export default function DraftEditorPage() {
                 size="small"
                 value={plannedPublishDate}
                 onChange={(e) => setPlannedPublishDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
               />
             </Box>
 
@@ -900,32 +900,34 @@ export default function DraftEditorPage() {
                   inputRef={bodyRef}
                   onSelect={handleSelectionChange}
                   onContextMenu={handleContextMenu}
-                  InputProps={{
-                    sx: isLight
-                      ? {
-                          bgcolor: '#ffffff',
-                          color: '#111827',
-                          alignItems: 'flex-start',
-                          '& fieldset': { borderColor: '#e5e7eb' },
-                          '&:hover fieldset': { borderColor: '#9ca3af' },
-                          '&.Mui-focused fieldset': { borderColor: '#4b5563' },
-                          '& textarea': {
+                  slotProps={{
+                    input: {
+                      sx: isLight
+                        ? {
                             bgcolor: '#ffffff',
                             color: '#111827',
-                          },
-                        }
-                      : {
-                          bgcolor: palette.bgCard,
-                          color: palette.text,
-                          alignItems: 'flex-start',
-                          '& fieldset': { borderColor: palette.border },
-                          '&:hover fieldset': { borderColor: palette.accent },
-                          '&.Mui-focused fieldset': { borderColor: palette.accent },
-                          '& textarea': {
+                            alignItems: 'flex-start',
+                            '& fieldset': { borderColor: '#e5e7eb' },
+                            '&:hover fieldset': { borderColor: '#9ca3af' },
+                            '&.Mui-focused fieldset': { borderColor: '#4b5563' },
+                            '& textarea': {
+                              bgcolor: '#ffffff',
+                              color: '#111827',
+                            },
+                          }
+                        : {
                             bgcolor: palette.bgCard,
                             color: palette.text,
+                            alignItems: 'flex-start',
+                            '& fieldset': { borderColor: palette.border },
+                            '&:hover fieldset': { borderColor: palette.accent },
+                            '&.Mui-focused fieldset': { borderColor: palette.accent },
+                            '& textarea': {
+                              bgcolor: palette.bgCard,
+                              color: palette.text,
+                            },
                           },
-                        },
+                    },
                   }}
                   sx={{
                     fontFamily: 'monospace',
@@ -1033,7 +1035,7 @@ export default function DraftEditorPage() {
                     },
                   }}
                 />
-                <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                   <Chip
                     label="Add story"
                     size="small"
@@ -1438,7 +1440,7 @@ export default function DraftEditorPage() {
                 Last updated:{' '}
                 {draft.updatedAt ? new Date(draft.updatedAt).toLocaleString() : '—'}
               </Typography>
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 {channel === 'newsletter' && (
                   <>
                     <Chip
@@ -1613,7 +1615,7 @@ export default function DraftEditorPage() {
                   },
                 }}
               />
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                 <Chip
                   label="Add story"
                   size="small"

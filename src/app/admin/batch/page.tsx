@@ -319,13 +319,15 @@ export default function BatchPage() {
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                justifyContent="space-between"
-                mb={2}
+                sx={{
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  justifyContent: 'space-between',
+                  mb: 2,
+                }}
               >
                 <Typography sx={{ fontWeight: 600, color: palette.text }}>Topics</Typography>
                 {selected.size > 0 && (
-                  <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                  <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: 12, color: palette.textDim }}>
                       {selected.size} selected
                     </Typography>
@@ -406,9 +408,9 @@ export default function BatchPage() {
                         <Stack
                           direction={{ xs: 'column', sm: 'row' }}
                           spacing={1.5}
-                          alignItems={{ xs: 'flex-start', sm: 'center' }}
-                          mt={1.5}
-                        >
+                         
+                         
+                         sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, mt: 1.5 }}>
                           <FormControl size="small" sx={{ minWidth: 140 }}>
                             <InputLabel id={`channel-${t.id}`}>Channel</InputLabel>
                             <Select
@@ -434,7 +436,7 @@ export default function BatchPage() {
                             <TextField
                               size="small"
                               type="number"
-                              inputProps={{ min: 1, max: 99 }}
+                              slotProps={{ htmlInput: { min: 1, max: 99 } }}
                               value={config[t.id]?.articleCount ?? 1}
                               onChange={(e) =>
                                 setArticleCount(t.id, Number(e.target.value) || 1)
@@ -453,7 +455,7 @@ export default function BatchPage() {
                         </Stack>
                       )}
                       {isSelected && (
-                        <Stack direction="row" spacing={1} mt={1}>
+                        <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                           <Chip
                             size="small"
                             label={

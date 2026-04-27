@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Container, Typography, Chip } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SavingsIcon from '@mui/icons-material/Savings';
 import HubIcon from '@mui/icons-material/Hub';

@@ -4,7 +4,7 @@ import {
   Box, Container, Typography, TextField, InputAdornment, Stack,
   IconButton, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -143,7 +143,7 @@ export default function WorkflowsPage() {
           <Typography variant="h6" sx={{ color: palette.text, fontWeight: 600, mb: 2 }}>
             Browse by Domain
           </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'flex-start' }}>
             <CategoryPills active={category} counts={counts} onChange={setCategory} />
             <TextField
               size="small"

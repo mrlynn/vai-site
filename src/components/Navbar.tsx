@@ -313,8 +313,8 @@ export default function Navbar() {
         anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: { bgcolor: palette.bgSurface, width: 280 },
+        slotProps={{
+          paper: { sx: { bgcolor: palette.bgSurface, width: 280 } },
         }}
       >
         <List sx={{ pt: 4 }}>

@@ -412,7 +412,7 @@ export default function KnowledgePage() {
           }}
         >
           <CardContent>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
               <Typography sx={{ fontWeight: 600, color: palette.text }}>
                 Knowledge sources
               </Typography>
@@ -483,7 +483,7 @@ export default function KnowledgePage() {
                       >
                         {s.sourcePath || (s.type === 'text' ? 'pasted text' : '—')}
                       </Typography>
-                      <Stack direction="row" spacing={1} mt={0.75} flexWrap="wrap">
+                      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 0.75 }}>
                         <Chip
                           size="small"
                           label={s.type}
@@ -527,9 +527,9 @@ export default function KnowledgePage() {
                     <Stack
                       direction="row"
                       spacing={1}
-                      alignItems="center"
-                      justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}
-                    >
+                     
+                     
+                     sx={{ alignItems: 'center', justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
                       <Typography sx={{ fontSize: 11, color: palette.textDim }}>
                         {s.chunkCount ?? 0} chunks
                       </Typography>
@@ -588,19 +588,21 @@ export default function KnowledgePage() {
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1.5}
-                alignItems={{ xs: 'stretch', sm: 'center' }}
-              >
+               
+               sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}>
                 <TextField
                   fullWidth
                   size="small"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="e.g. How does the newsletter system handle double opt-in?"
-                  InputProps={{
-                    sx: {
-                      '& fieldset': { borderColor: palette.border },
-                      '&:hover fieldset': { borderColor: palette.accent },
-                      '&.Mui-focused fieldset': { borderColor: palette.accent },
+                  slotProps={{
+                    input: {
+                      sx: {
+                        '& fieldset': { borderColor: palette.border },
+                        '&:hover fieldset': { borderColor: palette.accent },
+                        '&.Mui-focused fieldset': { borderColor: palette.accent },
+                      },
                     },
                   }}
                 />
@@ -648,9 +650,9 @@ export default function KnowledgePage() {
                           <Stack
                             direction="row"
                             spacing={1}
-                            alignItems="center"
-                            justifyContent="space-between"
-                          >
+                           
+                           
+                           sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
                             <Typography
                               sx={{
                                 fontSize: 12,
@@ -664,7 +666,7 @@ export default function KnowledgePage() {
                             >
                               {r.sourceName} — {r.originPath}
                             </Typography>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                               <Chip
                                 size="small"
                                 label={r.tag}
@@ -722,19 +724,21 @@ export default function KnowledgePage() {
               <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 spacing={1.5}
-                alignItems={{ xs: 'stretch', sm: 'center' }}
-              >
+               
+               sx={{ alignItems: { xs: 'stretch', sm: 'center' } }}>
                 <TextField
                   fullWidth
                   size="small"
                   value={debugQuery}
                   onChange={(e) => setDebugQuery(e.target.value)}
                   placeholder="Optional debug query, e.g. newsletter pipeline, Atlas Search, author style…"
-                  InputProps={{
-                    sx: {
-                      '& fieldset': { borderColor: palette.border },
-                      '&:hover fieldset': { borderColor: palette.accent },
-                      '&.Mui-focused fieldset': { borderColor: palette.accent },
+                  slotProps={{
+                    input: {
+                      sx: {
+                        '& fieldset': { borderColor: palette.border },
+                        '&:hover fieldset': { borderColor: palette.accent },
+                        '&.Mui-focused fieldset': { borderColor: palette.accent },
+                      },
                     },
                   }}
                 />

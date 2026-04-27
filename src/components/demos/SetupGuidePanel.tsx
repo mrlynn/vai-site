@@ -70,7 +70,7 @@ export default function SetupGuidePanel({ guide }: SetupGuidePanelProps) {
         mb: 4,
       }}
     >
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between',  mb: 1 }}>
         <Typography variant="h5" sx={{ color: palette.text, fontWeight: 700 }}>
           {guide.title}
         </Typography>
@@ -129,7 +129,7 @@ export default function SetupGuidePanel({ guide }: SetupGuidePanelProps) {
       <Stack spacing={2.5}>
         {currentTab.steps.map((step, stepIndex) => (
           <Box key={`${currentTab.id}-${stepIndex}`}>
-            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.75 }}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center',  mb: 0.75 }}>
               <Box
                 sx={{
                   width: 24,
@@ -175,9 +175,9 @@ export default function SetupGuidePanel({ guide }: SetupGuidePanelProps) {
             >
               <Stack
                 direction="row"
-                alignItems="center"
-                justifyContent="space-between"
-                sx={{
+               
+               
+                sx={{ alignItems: 'center', justifyContent: 'space-between', 
                   px: 1.5,
                   py: 0.5,
                   borderBottom: `1px solid ${palette.border}`,

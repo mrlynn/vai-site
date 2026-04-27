@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import TimelineOutlinedIcon from '@mui/icons-material/TimelineOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import HubOutlinedIcon from '@mui/icons-material/HubOutlined';
@@ -242,7 +242,7 @@ export default function PublicTelemetryDashboard() {
           bgcolor: 'rgba(255,255,255,0.02)',
         }}
       >
-        <Stack spacing={2} alignItems="center">
+        <Stack spacing={2} sx={{ alignItems: 'center' }}>
           <CircularProgress sx={{ color: palette.accent }} />
           <Typography variant="body2" sx={{ color: palette.textMuted }}>
             Loading the delayed public telemetry snapshot…
@@ -287,11 +287,11 @@ export default function PublicTelemetryDashboard() {
       <Stack
         direction={{ xs: 'column', md: 'row' }}
         spacing={1.5}
-        alignItems={{ xs: 'flex-start', md: 'center' }}
-        justifyContent="space-between"
-        sx={{ mb: 3 }}
+       
+       
+        sx={{ alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between',  mb: 3 }}
       >
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
           <Chip
             label={`Data through ${payload.meta.dataThrough}`}
             sx={{

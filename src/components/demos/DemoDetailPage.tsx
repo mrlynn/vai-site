@@ -15,7 +15,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
@@ -77,7 +77,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, md: 7 }}>
               <Box sx={{ mb: 3 }}>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 2 }}>
                   {demo.categories.map((category) => (
                     <Chip
                       key={category}
@@ -217,7 +217,7 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
                 )}
               </ButtonBase>
 
-              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 3 }}>
+              <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 3 }}>
                 {capabilityChips.map((chip) => (
                   <Chip
                     key={chip}
@@ -363,11 +363,13 @@ export default function DemoDetailPage({ demo }: DemoDetailPageProps) {
         onClose={() => setPreviewOpen(false)}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: palette.bgSurface,
-            border: `1px solid ${palette.border}`,
-            backgroundImage: 'none',
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: palette.bgSurface,
+              border: `1px solid ${palette.border}`,
+              backgroundImage: 'none',
+            },
           },
         }}
       >

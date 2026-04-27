@@ -510,10 +510,10 @@ export default function AdminBuilderPage() {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              justifyContent="space-between"
-              mb={2}
-            >
+             
+             
+             
+             sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}>
               <Typography sx={{ fontWeight: 600, color: palette.text }}>
                 Draft library
               </Typography>
@@ -585,9 +585,9 @@ export default function AdminBuilderPage() {
                             </Typography>
                           </Link>
                         }
-                        secondaryTypographyProps={{ component: 'div' }}
+                        slotProps={{ secondary: { component: 'div' } }}
                         secondary={
-                          <Stack direction="row" spacing={1} flexWrap="wrap" mt={0.5}>
+                          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mt: 0.5 }}>
                             <Chip
                               label={draft.type}
                               size="small"

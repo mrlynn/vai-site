@@ -8,7 +8,7 @@ import {
   Link as MuiLink,
   Stack,
 } from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CodeIcon from '@mui/icons-material/Code';

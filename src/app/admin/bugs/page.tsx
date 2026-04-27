@@ -327,7 +327,7 @@ export default function BugsAdminPage() {
 
   return (
     <Box sx={{ py: 2 }}>
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" mb={3}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography
             variant="h4"
@@ -372,12 +372,14 @@ export default function BugsAdminPage() {
                 fullWidth
                 size="small"
                 placeholder="Title, bug ID, email, command, account ID..."
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: palette.textMuted }} />
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: palette.textMuted }} />
+                      </InputAdornment>
+                    ),
+                  },
                 }}
               />
               <TextField
@@ -386,12 +388,12 @@ export default function BugsAdminPage() {
                 value={fromDate}
                 onChange={(event) => setFromDate(event.target.value)}
                 size="small"
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 sx={{ minWidth: 180 }}
               />
             </Stack>
 
-            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} useFlexGap flexWrap="wrap">
+            <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
               <FormControl size="small" sx={{ minWidth: 160 }}>
                 <InputLabel>Status</InputLabel>
                 <Select value={statusFilter} label="Status" onChange={(event) => setStatusFilter(event.target.value)}>
@@ -452,11 +454,11 @@ export default function BugsAdminPage() {
         </CardContent>
       </Card>
 
-      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} mb={3}>
+      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <Card sx={{ flex: 1, bgcolor: palette.bgSurface }}>
           <CardContent>
             <Typography sx={{ fontWeight: 700, color: palette.text, mb: 1 }}>Status</Typography>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
               {stats.status.map((bucket) => (
                 <Chip
                   key={bucket._id}
@@ -475,7 +477,7 @@ export default function BugsAdminPage() {
         <Card sx={{ flex: 1, bgcolor: palette.bgSurface }}>
           <CardContent>
             <Typography sx={{ fontWeight: 700, color: palette.text, mb: 1 }}>Priority</Typography>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
               {stats.priority.map((bucket) => (
                 <Chip
                   key={bucket._id}
@@ -613,7 +615,7 @@ export default function BugsAdminPage() {
         onClose={() => setSelectedBug(null)}
         maxWidth="lg"
         fullWidth
-        PaperProps={{ sx: { bgcolor: palette.bgSurface, color: palette.text } }}
+        slotProps={{ paper: { sx: { bgcolor: palette.bgSurface, color: palette.text } } }}
       >
         {selectedBug && triageDraft && (
           <>

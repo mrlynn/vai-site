@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Paper, IconButton, Tooltip, Button, Stack,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -195,7 +195,7 @@ export default function WorkflowDetailPage() {
             </Box>
 
             {/* Metadata pills */}
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 3 }}>
               <Chip label={w.category} sx={{ textTransform: 'capitalize', bgcolor: `${palette.accent}22`, color: palette.accent, fontWeight: 600 }} />
               <Chip label={`v${w.version}`} size="small" sx={{ bgcolor: palette.bgSurface, color: palette.textDim }} />
               <Chip label={`${w.stepsCount} steps · ${w.layersCount} layers`} size="small" sx={{ bgcolor: palette.bgSurface, color: palette.textDim }} />

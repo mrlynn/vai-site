@@ -258,7 +258,7 @@ function FooterNewsletterSignup() {
           aria-label="Email address for the vai newsletter"
           error={!!error}
           helperText={error || 'Low-volume, high-signal updates. No spam.'}
-          FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.5 } }}
+          slotProps={{ formHelperText: { sx: { fontSize: '0.7rem', mt: 0.5 } } }}
           sx={{
             flex: 1,
             '& .MuiOutlinedInput-root': {

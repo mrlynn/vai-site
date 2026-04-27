@@ -70,9 +70,9 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           spacing={1.5}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          sx={{ mb: 1.5 }}
+         
+         
+          sx={{ alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between',  mb: 1.5 }}
         >
           <Box>
             <Typography sx={{ color: palette.text, fontWeight: 600 }}>
@@ -99,8 +99,8 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
-            alignItems={{ xs: 'flex-start', sm: 'center' }}
-          >
+           
+           sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
             <Typography
               sx={{
                 color: palette.textMuted,
@@ -113,7 +113,7 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
             >
               Share
             </Typography>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
                 size="small"
@@ -148,8 +148,8 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={1}
-            alignItems={{ xs: 'flex-start', sm: 'center' }}
-          >
+           
+           sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
             <Typography
               sx={{
                 color: palette.textMuted,
@@ -162,7 +162,7 @@ export default function DemoSharePanel({ demo }: DemoSharePanelProps) {
             >
               Copy
             </Typography>
-            <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+            <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
               <Button
                 variant="outlined"
                 size="small"

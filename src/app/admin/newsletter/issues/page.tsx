@@ -112,9 +112,9 @@ export default function NewsletterIssuesPage() {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              justifyContent="space-between"
-            >
+             
+             
+             sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between' }}>
               <Box sx={{ flex: 1 }}>
                 <Typography sx={{ fontWeight: 600, color: palette.text, mb: 1 }}>
                   Create new issue
@@ -168,10 +168,10 @@ export default function NewsletterIssuesPage() {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              justifyContent="space-between"
-              mb={2}
-            >
+             
+             
+             
+             sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}>
               <Typography sx={{ fontWeight: 600, color: palette.text }}>
                 Issues
               </Typography>
@@ -249,7 +249,7 @@ export default function NewsletterIssuesPage() {
                           : 'No date'}
                       </Typography>
                     </Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                       <Chip
                         label={issue.status || 'draft'}
                         size="small"

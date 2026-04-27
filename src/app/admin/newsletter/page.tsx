@@ -186,7 +186,7 @@ export default function AdminNewsletterPage() {
               </Alert>
             )}
             {summary && (
-              <Stack direction="row" spacing={2} flexWrap="wrap">
+              <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap' }}>
                 <Chip
                   label={`Total: ${summary.total ?? 0}`}
                   sx={{
@@ -243,10 +243,10 @@ export default function AdminNewsletterPage() {
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={1}
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              justifyContent="space-between"
-              mb={2}
-            >
+             
+             
+             
+             sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', mb: 2 }}>
               <Typography sx={{ fontWeight: 600, color: palette.text }}>
                 Newsletter drafts
               </Typography>
@@ -302,7 +302,7 @@ export default function AdminNewsletterPage() {
                             : 'Unsaved draft'}
                         </Typography>
                       }
-                      secondaryTypographyProps={{ component: 'div' }}
+                      slotProps={{ secondary: { component: 'div' } }}
                     />
                   </ListItem>
                 ))}
@@ -385,7 +385,7 @@ export default function AdminNewsletterPage() {
                   mt: 1,
                 }}
               >
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <Chip
                     label={dryRun ? 'Dry run' : 'Live send'}
                     color={dryRun ? 'default' : 'success'}

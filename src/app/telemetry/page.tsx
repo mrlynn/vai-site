@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import ButtonLink from '@/components/ButtonLink';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import TerminalOutlinedIcon from '@mui/icons-material/TerminalOutlined';
@@ -267,7 +267,7 @@ export default function TelemetryPage() {
             <Grid container>
               <Grid size={{ xs: 12, lg: 8 }}>
                 <Box sx={{ p: { xs: 3, md: 5 } }}>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+                  <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 2 }}>
                     <Chip
                       label="Telemetry"
                       size="small"
@@ -591,7 +591,7 @@ export default function TelemetryPage() {
                     height: '100%',
                   }}
                 >
-                  <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 2 }}>
+                  <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center',  mb: 2 }}>
                     <DataObjectOutlinedIcon sx={{ color: palette.accent }} />
                     <Typography sx={{ color: palette.text, fontWeight: 700 }}>
                       Base fields on every payload
@@ -630,7 +630,7 @@ export default function TelemetryPage() {
                     height: '100%',
                   }}
                 >
-                  <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 2 }}>
+                  <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center',  mb: 2 }}>
                     <CodeOutlinedIcon sx={{ color: palette.blue }} />
                     <Typography sx={{ color: palette.text, fontWeight: 700 }}>
                       Representative event-specific fields
@@ -682,7 +682,7 @@ export default function TelemetryPage() {
                     <Typography sx={{ color: palette.text, fontWeight: 700, mb: 2 }}>
                       {group.group}
                     </Typography>
-                    <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
                       {group.events.map((eventName) => (
                         <Chip
                           key={eventName}
@@ -758,7 +758,7 @@ export default function TelemetryPage() {
                       height: '100%',
                     }}
                   >
-                    <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
+                    <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center',  mb: 1.5 }}>
                       {item.icon}
                       <Typography sx={{ color: palette.text, fontWeight: 700 }}>
                         {item.title}
@@ -969,7 +969,7 @@ function CodePanel({
         height: '100%',
       }}
     >
-      <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1.5 }}>
+      <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center',  mb: 1.5 }}>
         {icon}
         <Typography sx={{ color: palette.text, fontWeight: 700 }}>{title}</Typography>
       </Stack>

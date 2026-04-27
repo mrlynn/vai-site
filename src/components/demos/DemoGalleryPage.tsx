@@ -117,8 +117,8 @@ export default function DemoGalleryPage() {
           <Stack
             direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
-            justifyContent="center"
-            sx={{ color: palette.textMuted }}
+           
+            sx={{ justifyContent: 'center',  color: palette.textMuted }}
           >
             <Typography>{demos.length} published demos</Typography>
             <Typography>{categories.length - 1} learning paths</Typography>
@@ -153,7 +153,7 @@ export default function DemoGalleryPage() {
             }}
           />
 
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {categories.map((item) => {
               const active = item === category;
 

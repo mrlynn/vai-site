@@ -10,7 +10,7 @@ import {
   CardContent,
   TextField,
   Button,
-  Grid2 as Grid,
+  Grid,
   Table,
   TableBody,
   TableCell,
@@ -42,7 +42,7 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import TouchAppIcon from '@mui/icons-material/TouchApp';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import ModelTrainingIcon from '@mui/icons-material/ModelTraining';
 import InsightsIcon from '@mui/icons-material/Insights';

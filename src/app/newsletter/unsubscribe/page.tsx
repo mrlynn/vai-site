@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Box, Button, CircularProgress, Container, Typography } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import { palette } from '@/theme/theme';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';

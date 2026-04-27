@@ -195,7 +195,7 @@ export default function DemoCard({ demo }: DemoCardProps) {
         </ButtonBase>
 
         <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 2 }}>
             {demo.categories.slice(0, 2).map((category) => (
               <Chip
                 key={category}
@@ -231,7 +231,7 @@ export default function DemoCard({ demo }: DemoCardProps) {
             {demo.summary}
           </Typography>
 
-          <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap',  mb: 2 }}>
             {capabilityChips.map((chip) => (
               <Chip
                 key={chip}
@@ -256,13 +256,13 @@ export default function DemoCard({ demo }: DemoCardProps) {
               mb: 1.5,
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.8 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center',  mb: 0.8 }}>
               <TerminalIcon sx={{ fontSize: 14, color: palette.accent }} />
               <Typography sx={{ color: palette.textDim, fontSize: '0.8rem' }}>
                 VAI command
               </Typography>
             </Stack>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Typography
                 sx={{
                   color: palette.text,
@@ -419,11 +419,13 @@ export default function DemoCard({ demo }: DemoCardProps) {
         onClose={() => setPreviewOpen(false)}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: palette.bgSurface,
-            border: `1px solid ${palette.border}`,
-            backgroundImage: 'none',
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: palette.bgSurface,
+              border: `1px solid ${palette.border}`,
+              backgroundImage: 'none',
+            },
           },
         }}
       >
