@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Card, CardContent, Container, Typography, Link } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import BoltIcon from '@mui/icons-material/Bolt';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import ImageIcon from '@mui/icons-material/Image';

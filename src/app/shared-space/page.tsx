@@ -17,7 +17,7 @@ import {
   Snackbar,
   Alert,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { palette } from '@/theme/theme';

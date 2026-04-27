@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import ButtonLink from '@/components/ButtonLink';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import QueryStatsOutlinedIcon from '@mui/icons-material/QueryStatsOutlined';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';

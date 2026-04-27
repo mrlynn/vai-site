@@ -4,7 +4,7 @@ import {
   Box, Container, Typography, TextField, InputAdornment, Stack,
   IconButton, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import SearchIcon from '@mui/icons-material/Search';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';

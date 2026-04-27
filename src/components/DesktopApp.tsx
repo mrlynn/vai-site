@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Button, Chip, Container, Typography } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import DownloadIcon from '@mui/icons-material/Download';
 import AppleIcon from '@mui/icons-material/Apple';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
@@ -32,7 +32,7 @@ export default function DesktopApp() {
   return (
     <Box component="section" id="desktop" sx={{ py: { xs: 8, md: 12 } }}>
       <Container maxWidth="lg">
-        <Grid container spacing={6} sx={{ alignItems: 'center' }}>
+        <Grid container spacing={6} alignItems="center">
           <Grid size={{ xs: 12, md: 6 }}>
             <Chip
               label="Desktop App"

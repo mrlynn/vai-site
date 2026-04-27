@@ -10,7 +10,7 @@ import {
   CardContent,
   TextField,
   Button,
-  Grid,
+  Grid2 as Grid,
   Table,
   TableBody,
   TableCell,

@@ -170,7 +170,7 @@ export default function UnsplashImagePicker({
         <Box sx={{ mt: 2, maxHeight: 420, overflowY: 'auto' }}>
           <Grid container spacing={1.5}>
             {images.map((img) => (
-              <Grid size={{ xs: 6, sm: 4, md: 3 }} key={img.id}>
+              <Grid item xs={6} sm={4} md={3} key={img.id}>
                 <Card
                   sx={{
                     bgcolor: palette.bgCard,

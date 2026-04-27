@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/Grid2';
 import TimelineOutlinedIcon from '@mui/icons-material/TimelineOutlined';
 import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
 import HubOutlinedIcon from '@mui/icons-material/HubOutlined';
