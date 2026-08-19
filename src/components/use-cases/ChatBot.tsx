@@ -286,125 +286,46 @@ export default function ChatBot({ slug, accentColor, suggestedQueries = [], onOp
             </IconButton>
           </Box>
 
-          {/* Messages */}
-          <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1.5 }}>
-            {messages.length === 0 && (
-              <Box sx={{ mt: 1 }}>
-                <Typography variant="body2" sx={{ color: palette.textMuted, mb: 1.5 }}>
-                  Ask anything about the developer documentation:
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {suggestedQueries.map((q, i) => (
-                    <Chip
-                      key={i}
-                      label={q}
-                      size="small"
-                      onClick={() => sendMessage(q)}
-                      sx={{
-                        bgcolor: palette.bgCard,
-                        color: palette.textDim,
-                        border: `1px solid ${palette.border}`,
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        '&:hover': { bgcolor: palette.bgSurface, borderColor: accentColor },
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {messages.map((msg, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'flex',
-                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  mb: 1,
-                }}
-              >
-                <Box
-                  sx={{
-                    maxWidth: '85%',
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 2,
-                    bgcolor: msg.role === 'user' ? accentColor + '22' : palette.bgCard,
-                    border: `1px solid ${msg.role === 'user' ? accentColor + '44' : palette.border}`,
-                  }}
-                >
-                  {msg.role === 'user' ? (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: palette.text,
-                        whiteSpace: 'pre-wrap',
-                        fontSize: '0.85rem',
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {msg.content}
-                    </Typography>
-                  ) : (
-                    <Box sx={{ '& > *:first-of-type': { mt: 0 }, '& > *:last-child': { mb: 0 } }}>
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-                        {msg.content}
-                      </ReactMarkdown>
-                      {loading && i === messages.length - 1 && (
-                        <Box component="span" sx={{ ml: 0.5, opacity: 0.5 }}>
-                          ▊
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            ))}
-            <div ref={messagesEndRef} />
-          </Box>
-
-          {/* Input */}
+          {/* Maintenance notice */}
           <Box
             sx={{
-              px: 2,
-              py: 1.5,
+              flex: 1,
               display: 'flex',
-              gap: 1,
-              borderTop: `1px solid ${palette.border}`,
-              bgcolor: palette.bgSurface,
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              px: 3,
+              py: 4,
+              textAlign: 'center',
             }}
           >
-            <TextField
-              inputRef={inputRef}
-              fullWidth
-              size="small"
-              placeholder="Type a question..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage(input);
-                }
-              }}
-              disabled={loading}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: palette.bgCard,
-                  fontSize: '0.85rem',
-                  '& fieldset': { borderColor: palette.border },
-                  '&:hover fieldset': { borderColor: accentColor },
-                  '&.Mui-focused fieldset': { borderColor: accentColor },
-                },
-              }}
-            />
-            <IconButton
-              onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim()}
-              sx={{ color: accentColor }}
+            <Typography sx={{ fontSize: '2rem', mb: 2 }}>🔧</Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{ fontWeight: 600, color: palette.text, mb: 1 }}
             >
-              {loading ? <CircularProgress size={20} sx={{ color: accentColor }} /> : <SendIcon />}
-            </IconButton>
+              Demo Temporarily Unavailable
+            </Typography>
+            <Typography variant="body2" sx={{ color: palette.textMuted, lineHeight: 1.7 }}>
+              The live chatbot is currently disabled as this site is no longer actively maintained.
+              The demo remains available to showcase the interface and architecture.
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: palette.textDim, fontSize: '0.78rem', mt: 2 }}
+            >
+              Interested in building something like this? Check out{' '}
+              <Box
+                component="a"
+                href="https://github.com/mrlynn/voyageai-cli"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: accentColor, textDecoration: 'none' }}
+              >
+                voyageai-cli
+              </Box>{' '}
+              on GitHub.
+            </Typography>
           </Box>
         </Paper>
       </Fade>

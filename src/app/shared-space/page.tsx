@@ -185,76 +185,31 @@ export default function SharedSpacePage() {
           directly comparable. Enter two texts below and we&apos;ll prove it in three steps.
         </Typography>
 
-        {/* Input Panel */}
-        <Card sx={{ bgcolor: palette.bgSurface, mb: 4 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Preset</InputLabel>
-                <Select
-                  value={preset}
-                  label="Preset"
-                  onChange={(e) => handlePreset(e.target.value)}
-                >
-                  {PRESETS.map((p) => (
-                    <MenuItem key={p.label} value={p.label}>
-                      {p.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Grid container spacing={2} sx={{ mb: 2 }}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  label="Text A"
-                  multiline
-                  rows={3}
-                  fullWidth
-                  value={textA}
-                  onChange={(e) => setTextA(e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: palette.border },
-                    },
-                  }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  label="Text B"
-                  multiline
-                  rows={3}
-                  fullWidth
-                  value={textB}
-                  onChange={(e) => setTextB(e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '& fieldset': { borderColor: palette.border },
-                    },
-                  }}
-                />
-              </Grid>
-            </Grid>
-            <Button
-              variant="contained"
-              onClick={handleExplore}
-              disabled={loading || !textA.trim() || !textB.trim()}
-              sx={{
-                bgcolor: palette.accent,
-                color: palette.bg,
-                fontWeight: 700,
-                px: 4,
-                '&:hover': { bgcolor: palette.accentDim },
-              }}
-            >
-              {loading ? 'Exploring...' : 'Explore →'}
-            </Button>
-            {error && (
-              <Typography sx={{ color: '#ff6b6b', mt: 1, fontSize: '0.875rem' }}>
-                {error}
-              </Typography>
-            )}
+        {/* Maintenance notice */}
+        <Card sx={{ bgcolor: palette.bgSurface, mb: 4, border: `1px solid ${palette.border}` }}>
+          <CardContent sx={{ p: 4, textAlign: 'center' }}>
+            <Typography sx={{ fontSize: '2rem', mb: 2 }}>🔧</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: palette.text, mb: 1 }}>
+              Demo Temporarily Unavailable
+            </Typography>
+            <Typography sx={{ color: palette.textMuted, fontSize: '0.9rem', lineHeight: 1.7, maxWidth: 540, mx: 'auto' }}>
+              The interactive explorer is currently disabled as this site is no longer actively
+              maintained. The page remains up to demonstrate the interface and the concept behind
+              Voyage AI&apos;s shared embedding space.
+            </Typography>
+            <Typography sx={{ color: palette.textDim, fontSize: '0.8rem', mt: 2.5 }}>
+              Want to build this yourself? See{' '}
+              <Box
+                component="a"
+                href="https://github.com/mrlynn/voyageai-cli"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: palette.accent, textDecoration: 'none' }}
+              >
+                voyageai-cli on GitHub
+              </Box>
+              .
+            </Typography>
           </CardContent>
         </Card>
 
