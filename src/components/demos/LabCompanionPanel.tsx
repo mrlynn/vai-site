@@ -21,7 +21,7 @@ export default function LabCompanionPanel({ lab }: LabCompanionPanelProps) {
         mb: 4,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1 }}>
         <MenuBookIcon sx={{ color: palette.accent, fontSize: 24 }} />
         <Typography variant="h5" sx={{ color: palette.text, fontWeight: 700 }}>
           Lab companion

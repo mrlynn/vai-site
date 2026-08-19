@@ -7,7 +7,7 @@ import {
   Container,
   Typography,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import DownloadIcon from '@mui/icons-material/Download';
 import AppleIcon from '@mui/icons-material/Apple';
 import DesktopWindowsIcon from '@mui/icons-material/DesktopWindows';
