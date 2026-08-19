@@ -346,7 +346,7 @@ export default function DemoCard({ demo }: DemoCardProps) {
             </Typography>
           </Box>
 
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
               size="small"

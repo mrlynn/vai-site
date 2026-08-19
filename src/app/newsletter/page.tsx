@@ -1,10 +1,8 @@
-import Link from 'next/link';
 import { getPublishedIssuesList } from '@/lib/content/issues';
 import {
   Box,
   Container,
   Typography,
-  Button,
   Link as MuiLink,
   Stack,
 } from '@mui/material';
@@ -13,6 +11,7 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CodeIcon from '@mui/icons-material/Code';
 import { palette } from '@/theme/theme';
+import ButtonLink from '@/components/ButtonLink';
 
 export const metadata = {
   title: 'Vector Log — Newsletter for AI Builders',
@@ -159,8 +158,7 @@ export default async function NewsletterIndexPage() {
             One email every two weeks. Unsubscribe anytime. We only use your address for the
             newsletter.
           </Typography>
-          <Button
-            component={Link}
+          <ButtonLink
             href="/newsletter/subscribe"
             variant="contained"
             size="large"
@@ -177,7 +175,7 @@ export default async function NewsletterIndexPage() {
             }}
           >
             Subscribe — it&apos;s free
-          </Button>
+          </ButtonLink>
         </Box>
 
         {/* What you get — GTM benefit bullets */}
@@ -275,7 +273,6 @@ export default async function NewsletterIndexPage() {
                     }}
                   >
                     <MuiLink
-                      component={Link}
                       href={`/newsletter/${issue.issueNumber}`}
                       underline="hover"
                       sx={{
@@ -332,8 +329,7 @@ export default async function NewsletterIndexPage() {
           <Typography sx={{ color: palette.textMuted, fontSize: 14, mb: 2, lineHeight: 1.5 }}>
             Get Vector Log in your inbox. No spam — just developer-focused AI notes, bi-weekly.
           </Typography>
-          <Button
-            component={Link}
+          <ButtonLink
             href="/newsletter/subscribe"
             variant="contained"
             sx={{
@@ -348,7 +344,7 @@ export default async function NewsletterIndexPage() {
             }}
           >
             Subscribe to Vector Log
-          </Button>
+          </ButtonLink>
         </Box>
       </Container>
     </Box>

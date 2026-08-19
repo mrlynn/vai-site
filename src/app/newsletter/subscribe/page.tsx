@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { Box, Container, Typography } from '@mui/material';
 import { palette } from '@/theme/theme';
 
@@ -7,7 +6,7 @@ export default function NewsletterSubscribePage() {
     <Box sx={{ py: 8, minHeight: '70vh' }}>
       <Container maxWidth="sm">
         <Typography
-          component={Link}
+          component="a"
           href="/newsletter"
           sx={{
             display: 'inline-block',

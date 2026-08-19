@@ -139,16 +139,18 @@ export default function SiteSearch() {
         onClose={closeSearch}
         fullWidth
         maxWidth="sm"
-        PaperProps={{
-          sx: {
-            position: 'fixed',
-            top: isMobile ? '10%' : 80,
-            mx: 'auto',
-            borderRadius: 2,
-            bgcolor: palette.bgCard,
-            border: `1px solid ${palette.border}`,
-            boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
-            overflow: 'hidden',
+        slotProps={{
+          paper: {
+            sx: {
+              position: 'fixed',
+              top: isMobile ? '10%' : 80,
+              mx: 'auto',
+              borderRadius: 2,
+              bgcolor: palette.bgCard,
+              border: `1px solid ${palette.border}`,
+              boxShadow: '0 24px 48px rgba(0,0,0,0.4)',
+              overflow: 'hidden',
+            },
           },
         }}
       >
@@ -207,21 +209,23 @@ export default function SiteSearch() {
                 <ListItemText
                   primary={entry.title}
                   secondary={entry.description}
-                  primaryTypographyProps={{
-                    sx: {
-                      fontWeight: 600,
-                      fontSize: '0.95rem',
-                      color: palette.text,
+                  slotProps={{
+                    primary: {
+                      sx: {
+                        fontWeight: 600,
+                        fontSize: '0.95rem',
+                        color: palette.text,
+                      },
                     },
-                  }}
-                  secondaryTypographyProps={{
-                    sx: {
-                      fontSize: '0.8rem',
-                      color: palette.textMuted,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
+                    secondary: {
+                      sx: {
+                        fontSize: '0.8rem',
+                        color: palette.textMuted,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      },
                     },
                   }}
                 />
