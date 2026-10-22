@@ -36,6 +36,6 @@
     "@types/react-simple-maps": "^3.0.6",
     "eslint": "^9.19.0",
     "eslint-config-next": "^16.0.0",
-    "typescript": "^5.7.3"
+    "typescript": "^7.0.0"
   }
 }
